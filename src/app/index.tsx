@@ -1,98 +1,89 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
+import {
+  CalendarHeartIcon,
+  HandHeartIcon,
+  HeartIcon,
+  MapTrifoldIcon,
+  MoonIcon,
+  SparkleIcon,
+  SunIcon,
+} from 'phosphor-react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { Button } from '@/components/Button';
+import { Card } from '@/components/Card';
+import { Counter } from '@/components/Counter';
+import { Icon } from '@/components/Icon';
+import { Text } from '@/components/Text';
+import { useTheme } from '@/theme/ThemeProvider';
+import { ThemeMode } from '@/theme/tokens';
+import { daysBetween, pluralUk } from '@/utils/dates';
 
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
+// Тимчасовий екран-вітрина дизайн-системи. На Етапі 2 його замінять вкладки.
+const DEMO_START = new Date(2024, 1, 14);
+
+const MODES: { mode: ThemeMode; title: string }[] = [
+  { mode: 'light', title: 'Світла' },
+  { mode: 'dark', title: 'Темна' },
+  { mode: 'system', title: 'Системна' },
+];
+
+export default function DesignShowcase() {
+  const { spacing, mode, setMode, isDark } = useTheme();
+  const days = daysBetween(DEMO_START);
+
   return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
-  );
-}
+    <SafeAreaView style={styles.flex}>
+      <ScrollView contentContainerStyle={{ padding: spacing.lg, gap: spacing.lg }}>
+        <Text variant="title">Dotyk</Text>
 
-export default function HomeScreen() {
-  return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
+        <Counter
+          value={days}
+          label={`${pluralUk(days, ['день', 'дні', 'днів'])} разом`}
+          caption="з 14 лютого 2024"
+        />
 
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
+        <Card style={{ gap: spacing.sm }}>
+          <Text variant="subtitle">Коли ми востаннє…</Text>
+          <Text color="textMuted">Ходили на побачення — 6 днів тому</Text>
+          <Text variant="caption" color="textMuted">
+            Перевірка гліфів: і ї є ґ І Ї Є Ґ — «Ґанок, їжак, єнот, ірис»
+          </Text>
+        </Card>
 
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
+        <Card style={{ gap: spacing.md }}>
+          <Text variant="subtitle">Іконки</Text>
+          <View style={[styles.row, { gap: spacing.lg }]}>
+            <Icon icon={HeartIcon} size={32} color="primary" weight="duotone" />
+            <Icon icon={CalendarHeartIcon} size={32} color="secondary" weight="duotone" />
+            <Icon icon={MapTrifoldIcon} size={32} color="primary" weight="duotone" />
+            <Icon icon={SparkleIcon} size={32} color="secondary" weight="fill" />
+            <Icon icon={isDark ? MoonIcon : SunIcon} size={32} color="textMuted" />
+          </View>
+        </Card>
 
-        {Platform.OS === 'web' && <WebBadge />}
-      </SafeAreaView>
-    </ThemedView>
+        <Card style={{ gap: spacing.md }}>
+          <Text variant="subtitle">Тема</Text>
+          <View style={[styles.row, { gap: spacing.sm }]}>
+            {MODES.map((m) => (
+              <Button
+                key={m.mode}
+                title={m.title}
+                variant={mode === m.mode ? 'primary' : 'secondary'}
+                onPress={() => setMode(m.mode)}
+              />
+            ))}
+          </View>
+        </Card>
+
+        <Button title="Надіслати «тик»" icon={HandHeartIcon} />
+        <Button title="Додати момент" variant="ghost" />
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
-  },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
-  },
-  heroSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
-  },
-  title: {
-    textAlign: 'center',
-  },
-  code: {
-    textTransform: 'uppercase',
-  },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
-  },
+  flex: { flex: 1 },
+  row: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center' },
 });
