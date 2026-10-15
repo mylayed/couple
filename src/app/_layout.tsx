@@ -5,12 +5,16 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 
+import { useSession } from '@/store/session';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
 
 SplashScreen.preventAutoHideAsync();
 
 function Shell() {
   const { isDark, colors } = useTheme();
+  // Без сесії або без пари — онбординг; куди саме всередині, вирішує (onboarding)/_layout
+  const isPaired = useSession((s) => s.user !== null && s.couple !== null);
+
   return (
     <>
       <StatusBar style={isDark ? 'light' : 'dark'} />
@@ -19,7 +23,14 @@ function Shell() {
           headerShown: false,
           contentStyle: { backgroundColor: colors.background },
         }}
-      />
+      >
+        <Stack.Protected guard={!isPaired}>
+          <Stack.Screen name="(onboarding)" />
+        </Stack.Protected>
+        <Stack.Protected guard={isPaired}>
+          <Stack.Screen name="(tabs)" />
+        </Stack.Protected>
+      </Stack>
     </>
   );
 }
