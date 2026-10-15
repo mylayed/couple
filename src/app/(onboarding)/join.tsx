@@ -6,12 +6,12 @@ import { Button } from '@/components/Button';
 import { Screen } from '@/components/Screen';
 import { Text } from '@/components/Text';
 import { TextField } from '@/components/TextField';
-import { INVITE_CODE_LENGTH, normalizeInviteCode, useSession } from '@/store/session';
+import { INVITE_CODE_LENGTH, normalizeInviteCode, useCouple } from '@/store/couple';
 import { useTheme } from '@/theme/ThemeProvider';
 
 export default function Join() {
   const { spacing } = useTheme();
-  const joinCouple = useSession((s) => s.joinCouple);
+  const joinCouple = useCouple((s) => s.joinCouple);
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const canSubmit = normalizeInviteCode(code).length === INVITE_CODE_LENGTH;

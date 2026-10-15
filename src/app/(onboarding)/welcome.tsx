@@ -3,6 +3,7 @@ import { HeartIcon } from 'phosphor-react-native';
 import { StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/Button';
+import { GoogleButton } from '@/components/GoogleButton';
 import { Icon } from '@/components/Icon';
 import { Screen } from '@/components/Screen';
 import { Text } from '@/components/Text';
@@ -27,7 +28,15 @@ export default function Welcome() {
         </Text>
       </View>
 
-      <Button title="Почати" onPress={() => router.push('/sign-in')} />
+      <View style={{ gap: spacing.sm }}>
+        <Button title="Створити акаунт" onPress={() => router.push('/sign-up')} />
+        <GoogleButton />
+        <Button
+          title="У мене вже є акаунт"
+          variant="ghost"
+          onPress={() => router.push('/sign-in')}
+        />
+      </View>
     </Screen>
   );
 }

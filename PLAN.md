@@ -22,7 +22,7 @@
 | Анімації та жести | react-native-reanimated, react-native-gesture-handler |
 | Стан | Zustand |
 | Локальне сховище | MMKV (dev-build потрібен і так, тому обмеження Expo Go не заважає) |
-| Безпечне сховище | expo-secure-store для токенів сесії |
+| Безпечне сховище | expo-secure-store для ключа шифрування сесії (сама сесія — у зашифрованому MMKV) |
 | Бекенд | **Supabase**: Auth, Postgres + RLS, Realtime, Storage, Edge Functions |
 | Нагадування | expo-notifications |
 | Віджети | Android: react-native-android-widget. iOS: нативний таргет, на пізнішому етапі |
@@ -63,7 +63,7 @@ src/
 
 | Що | Де |
 |---|---|
-| Токени сесії | expo-secure-store |
+| Токени сесії | зашифрований MMKV, ключ у expo-secure-store |
 | Тема (світла / темна / системна) | MMKV |
 | Налаштування сповіщень цього телефона | MMKV |
 | Прапорці онбордингу, остання відкрита вкладка | MMKV |
@@ -161,15 +161,17 @@ src/
 
 ## Етап 3. Акаунт і авторизація
 
-- [ ] Створити проєкт Supabase, клієнт у `src/services/supabase.ts`
-- [ ] Sign in with Apple (`expo-apple-authentication`)
-- [ ] Sign in with Google (`@react-native-google-signin/google-signin`)
-- [ ] Email і пароль, відновлення пароля (або вхід за посиланням з листа)
-- [ ] Об'єднання акаунтів з однаковою поштою (account linking)
-- [ ] Зберігати сесію в `expo-secure-store`
-- [ ] Профіль: ім'я, аватар, дата народження
-- [ ] Вихід з акаунта
-- [ ] Видалення акаунта всередині застосунку (вимога App Store)
+- [x] Створити проєкт Supabase, клієнт у `src/services/supabase.ts` (URL і publishable key у `.env`)
+- [ ] Sign in with Apple (`expo-apple-authentication`) — відкладено до підготовки релізу в App Store
+- [ ] Sign in with Google (`@react-native-google-signin/google-signin`): код готовий (`src/services/google.ts`, кнопка на вітанні та вході), лишилось створити OAuth-клієнти, вписати їх у `.env` і Supabase та перевірити на dev-build
+- [x] Email і пароль; підтвердження пошти й відновлення пароля кодом із листа (екрани `sign-up`, `sign-in`, `verify`, `forgot`)
+- [ ] Об'єднання акаунтів з однаковою поштою (account linking): Supabase зв'язує їх сам, перевірити після підключення Google і Apple
+- [x] Зберігати сесію безпечно: зашифрований MMKV, ключ шифрування в `expo-secure-store` (SecureStore на iOS не тримає значення понад 2 КБ)
+- [x] Таблиця `profiles` з RLS і тригером створення (`supabase/migrations/`)
+- [x] Профіль: ім'я та дата народження в налаштуваннях
+- [ ] Аватар (`expo-image-picker` + Supabase Storage)
+- [x] Вихід з акаунта
+- [x] Видалення акаунта всередині застосунку (вимога App Store): RPC `delete_account`
 
 **Готово, коли:** усі три способи входу працюють на dev-build, а акаунт можна видалити.
 

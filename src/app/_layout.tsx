@@ -5,7 +5,8 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 
-import { useSession } from '@/store/session';
+import { useCouple } from '@/store/couple';
+import { selectSignedIn, startAuthListener, useAuth } from '@/store/auth';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
 
 SplashScreen.preventAutoHideAsync();
@@ -13,7 +14,9 @@ SplashScreen.preventAutoHideAsync();
 function Shell() {
   const { isDark, colors } = useTheme();
   // Без сесії або без пари — онбординг; куди саме всередині, вирішує (onboarding)/_layout
-  const isPaired = useSession((s) => s.user !== null && s.couple !== null);
+  const signedIn = useAuth(selectSignedIn);
+  const hasCouple = useCouple((s) => s.couple !== null);
+  const isPaired = signedIn && hasCouple;
 
   return (
     <>
@@ -44,12 +47,20 @@ export default function RootLayout() {
     Manrope_700Bold,
   });
 
-  useEffect(() => {
-    if (loaded || error) SplashScreen.hideAsync();
-  }, [loaded, error]);
+  const authReady = useAuth((s) => s.initialized);
 
-  // Сплеш тримається, доки шрифти не завантажаться
-  if (!loaded && !error) return null;
+  useEffect(() => {
+    startAuthListener();
+  }, []);
+
+  const fontsReady = loaded || Boolean(error);
+
+  useEffect(() => {
+    if (fontsReady && authReady) SplashScreen.hideAsync();
+  }, [fontsReady, authReady]);
+
+  // Сплеш тримається, доки не завантажаться шрифти й не відновиться сесія
+  if (!fontsReady || !authReady) return null;
 
   return (
     <ThemeProvider>

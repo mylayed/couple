@@ -8,9 +8,11 @@
     "scheme": "dotyk",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/expo.icon",
+      "bundleIdentifier": "com.mylayed.dotyk"
     },
     "android": {
+      "package": "com.mylayed.dotyk",
       "adaptiveIcon": {
         "backgroundColor": "#FFF7F5",
         "foregroundImage": "./assets/images/android-icon-foreground.png",

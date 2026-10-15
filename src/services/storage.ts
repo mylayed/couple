@@ -7,7 +7,7 @@ export const storage = createMMKV({ id: 'dotyk' });
 
 export const StorageKeys = {
   themeMode: 'theme-mode',
-  session: 'session',
+  couple: 'couple',
 } as const;
 
 // Адаптер для persist-мідлвара Zustand: MMKV синхронний, тому стан доступний одразу при запуску

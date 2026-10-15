@@ -7,17 +7,17 @@ import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Screen } from '@/components/Screen';
 import { Text } from '@/components/Text';
-import { useSession } from '@/store/session';
+import { signOut } from '@/services/auth';
+import { useAuth } from '@/store/auth';
+import { useCouple } from '@/store/couple';
 import { useTheme } from '@/theme/ThemeProvider';
 
 export default function Pair() {
   const { spacing } = useTheme();
-  const name = useSession((s) => s.user?.name ?? '');
-  const signOut = useSession((s) => s.signOut);
-  const code = useSession((s) => s.inviteCode);
+  const name = useAuth((s) => s.profile?.name);
+  const code = useCouple((s) => s.inviteCode);
 
   const share = async () => {
-    if (!code) return;
     Haptics.selectionAsync();
     await Share.share({
       message: `Приєднуйся до мене в Dotyk! Мій код: ${code}`,
@@ -27,7 +27,7 @@ export default function Pair() {
   return (
     <Screen edges={['top', 'bottom']}>
       <View style={{ gap: spacing.sm }}>
-        <Text variant="title">{name}, запроси свою людину</Text>
+        <Text variant="title">{name ? `${name}, запроси` : 'Запроси'} свою людину</Text>
         <Text color="textMuted">
           Надішли партнеру код. Коли він або вона введе його у себе, ви побачите одне одного.
         </Text>
@@ -38,7 +38,7 @@ export default function Pair() {
           Твій код запрошення
         </Text>
         <Text variant="title" selectable style={{ letterSpacing: 6 }}>
-          {code ?? '······'}
+          {code}
         </Text>
       </Card>
 
@@ -53,7 +53,7 @@ export default function Pair() {
           variant="secondary"
           onPress={() => router.push('/join')}
         />
-        <Button title="Увійти під іншим ім'ям" variant="ghost" onPress={signOut} />
+        <Button title="Вийти з акаунта" variant="ghost" onPress={signOut} />
       </View>
     </Screen>
   );

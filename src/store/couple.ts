@@ -3,26 +3,19 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { StorageKeys, zustandStorage } from '@/services/storage';
 
-// Тимчасова локальна сесія для навігації та онбордингу.
-// На Етапі 3 користувача дасть Supabase Auth, на Етапі 4 пару — сервер.
-
-export type User = {
-  name: string;
-};
+// Тимчасова локальна пара. На Етапі 4 її замінять таблиці couples і couple_members у Supabase.
 
 export type Couple = {
   partnerName: string | null;
   pairedAt: string; // ISO-дата
 };
 
-type SessionState = {
-  user: User | null;
+type CoupleState = {
   couple: Couple | null;
-  inviteCode: string | null;
-  signIn: (name: string) => void;
-  signOut: () => void;
+  inviteCode: string;
   joinCouple: (code: string) => boolean;
   leaveCouple: () => void;
+  reset: () => void;
 };
 
 // Без схожих символів (0/O, 1/I/L), щоб код було легко продиктувати
@@ -41,18 +34,12 @@ export function normalizeInviteCode(raw: string): string {
   return raw.toUpperCase().replace(/[^A-Z0-9]/g, '');
 }
 
-export const useSession = create<SessionState>()(
+export const useCouple = create<CoupleState>()(
   persist(
     (set, get) => ({
-      user: null,
       couple: null,
-      inviteCode: null,
-
-      // Код запрошення створюється разом із сесією і живе, доки користувач не вийде
-      signIn: (name) =>
-        set({ user: { name: name.trim() }, inviteCode: get().inviteCode ?? generateInviteCode() }),
-
-      signOut: () => set({ user: null, couple: null, inviteCode: null }),
+      // Збережений код перекриває цей під час відновлення стану, тож він стабільний між запусками
+      inviteCode: generateInviteCode(),
 
       // Поки що приймаємо будь-який код правильної довжини; перевірку зробить сервер
       joinCouple: (raw) => {
@@ -63,11 +50,14 @@ export const useSession = create<SessionState>()(
       },
 
       leaveCouple: () => set({ couple: null }),
+
+      // Після виходу з акаунта пара цього телефона більше не актуальна
+      reset: () => set({ couple: null, inviteCode: generateInviteCode() }),
     }),
     {
-      name: StorageKeys.session,
+      name: StorageKeys.couple,
       storage: createJSONStorage(() => zustandStorage),
-      partialize: ({ user, couple, inviteCode }) => ({ user, couple, inviteCode }),
+      partialize: ({ couple, inviteCode }) => ({ couple, inviteCode }),
     },
   ),
 );
