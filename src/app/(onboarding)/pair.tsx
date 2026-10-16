@@ -1,4 +1,3 @@
-import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { KeyIcon, ShareNetworkIcon } from 'phosphor-react-native';
 import { useEffect, useState } from 'react';
@@ -13,6 +12,7 @@ import { requestInviteCode } from '@/services/couple';
 import { useAuth } from '@/store/auth';
 import { useCouple } from '@/store/couple';
 import { useTheme } from '@/theme/ThemeProvider';
+import { haptics } from '@/utils/haptics';
 
 export default function Pair() {
   const router = useRouter();
@@ -36,7 +36,7 @@ export default function Pair() {
 
   const share = async () => {
     if (!code) return;
-    Haptics.selectionAsync();
+    haptics.select();
     await Share.share({
       message: `Приєднуйся до мене в Dotyk! Мій код: ${code}`,
     });

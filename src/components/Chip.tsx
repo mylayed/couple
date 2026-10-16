@@ -1,8 +1,8 @@
-import * as Haptics from 'expo-haptics';
 import type { Icon as PhosphorIcon } from 'phosphor-react-native';
 import { Pressable, StyleSheet } from 'react-native';
 
 import { useTheme } from '@/theme/ThemeProvider';
+import { haptics } from '@/utils/haptics';
 import { Icon } from './Icon';
 import { Text } from './Text';
 
@@ -23,7 +23,7 @@ export function Chip({ label, icon, selected = false, onPress, accessibilityLabe
       accessibilityState={{ selected }}
       accessibilityLabel={accessibilityLabel ?? label}
       onPress={() => {
-        Haptics.selectionAsync();
+        haptics.select();
         onPress();
       }}
       style={[

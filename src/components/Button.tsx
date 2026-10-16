@@ -1,9 +1,9 @@
-import * as Haptics from 'expo-haptics';
 import type { Icon as PhosphorIcon } from 'phosphor-react-native';
 import { Pressable, PressableProps, StyleSheet, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
 import { useTheme } from '@/theme/ThemeProvider';
+import { haptics } from '@/utils/haptics';
 import { Icon } from './Icon';
 import { Text } from './Text';
 
@@ -53,7 +53,7 @@ export function Button({
         onPressOut?.(e);
       }}
       onPress={(e) => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        haptics.tap();
         onPress?.(e);
       }}
       style={[

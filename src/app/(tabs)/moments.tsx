@@ -1,4 +1,3 @@
-import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { CheckIcon, ClockCounterClockwiseIcon, PlusIcon } from 'phosphor-react-native';
 import { Pressable, View } from 'react-native';
@@ -21,6 +20,7 @@ import {
 } from '@/services/moments';
 import { useTheme } from '@/theme/ThemeProvider';
 import { formatDaysAgo } from '@/utils/dates';
+import { haptics } from '@/utils/haptics';
 
 function subtitle(m: MomentSummary): string {
   if (m.daysSince === null) return 'Ще не відмічали';
@@ -38,7 +38,7 @@ function LogTodayButton({ moment }: { moment: MomentSummary }) {
       accessibilityLabel={`Відмітити «${moment.title}» сьогодні`}
       disabled={doneToday}
       onPress={() => {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        haptics.success();
         logMoment(moment.id);
       }}
       style={{
