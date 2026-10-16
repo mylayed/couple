@@ -6,6 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 
 import { startCoupleListener } from '@/services/couple';
+import { startPhotoUploads } from '@/services/memories';
 import { startNotifications } from '@/services/notifications';
 import { selectIsPaired, useCouple } from '@/store/couple';
 import { selectSignedIn, startAuthListener, useAuth } from '@/store/auth';
@@ -66,6 +67,10 @@ function Shell() {
           <Stack.Screen name="games/new" options={detailHeader} />
           <Stack.Screen name="games/[id]" options={detailHeader} />
           <Stack.Screen name="challenges" options={{ ...detailHeader, title: 'Челенджі' }} />
+          <Stack.Screen name="memory/new" options={{ ...detailHeader, title: 'Новий спогад' }} />
+          <Stack.Screen name="memory/[id]" options={detailHeader} />
+          <Stack.Screen name="capsule" options={{ ...detailHeader, title: 'Капсула часу' }} />
+          <Stack.Screen name="year" options={{ ...detailHeader, title: 'Підсумок року' }} />
         </Stack.Protected>
       </Stack>
     </>
@@ -88,6 +93,7 @@ export default function RootLayout() {
     startCoupleListener();
     startNotifications();
     startWidgetUpdates();
+    startPhotoUploads();
   }, []);
 
   const fontsReady = loaded || Boolean(error);

@@ -127,6 +127,23 @@ export type Challenge = SyncedBase & {
   created_by: string | null;
 };
 
+// Фото лежить у Storage; шляхи з'являються, коли завантаження завершилось (src/services/photos.ts)
+export type Memory = SyncedBase & {
+  happened_on: string; // YYYY-MM-DD
+  caption: string | null;
+  photo_path: string | null;
+  thumb_path: string | null;
+  photo_width: number | null;
+  photo_height: number | null;
+  created_by: string | null;
+};
+
+export type MemoryComment = SyncedBase & {
+  memory_id: string;
+  body: string;
+  created_by: string | null;
+};
+
 export type SyncedTables = {
   important_dates: ImportantDate;
   moments: Moment;
@@ -142,12 +159,14 @@ export type SyncedTables = {
   game_rounds: GameRound;
   game_answers: GameAnswer;
   challenges: Challenge;
+  memories: Memory;
+  memory_comments: MemoryComment;
 };
 
 export type SyncedTable = keyof SyncedTables;
 
 // Порядок важливий: відмітки посилаються на дії, коментарі — на відповіді,
-// пункти — на списки, вибір у грі — на раунд, тому батьківські записи відправляються першими
+// пункти — на списки, вибір у грі — на раунд, коментарі до спогадів — на спогади, тому батьківські записи відправляються першими
 const TABLES: SyncedTable[] = [
   'important_dates',
   'moments',
@@ -163,6 +182,8 @@ const TABLES: SyncedTable[] = [
   'game_rounds',
   'game_answers',
   'challenges',
+  'memories',
+  'memory_comments',
 ];
 
 // Таблиці, де власник записаний у user_id, а не в created_by
@@ -200,6 +221,8 @@ const emptyRows = (): SyncState['rows'] => ({
   game_rounds: {},
   game_answers: {},
   challenges: {},
+  memories: {},
+  memory_comments: {},
 });
 
 export const useSync = create<SyncState>()(

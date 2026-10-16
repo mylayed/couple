@@ -10,6 +10,7 @@ import { selectIsPaired, useCouple } from '@/store/couple';
 import { useNotificationPrefs } from '@/store/notifications';
 import { addDays, formatOrdinal, parseIsoDate, todayIso, toIsoDate } from '@/utils/dates';
 import { buildCalendar } from './calendar';
+import { refreshCapsules, useCapsules } from './capsules';
 import { summarize } from './moments';
 import { questionForDate } from './questions';
 import { isExpoGo } from './storage';
@@ -102,6 +103,21 @@ function plannedReminders(now = new Date()): Reminder[] {
           url: '/dates',
         },
       );
+    }
+  }
+
+  // Капсула часу відкривається в обидва телефони одночасно, тож нагадує кожен сам
+  if (prefs.dateReminders) {
+    const capsules = useCapsules.getState();
+    if (capsules.coupleId === useSync.getState().coupleId) {
+      for (const capsule of capsules.items) {
+        if (capsule.message !== null) continue;
+        reminders.push({
+          date: at(parseIsoDate(capsule.opens_on), DATE_HOUR),
+          body: 'Сьогодні відкривається ваша капсула часу 💌',
+          url: '/capsule',
+        });
+      }
     }
   }
 
@@ -262,14 +278,19 @@ export function startNotifications(): void {
       scheduleUpdate();
     }
   });
+  useCapsules.subscribe(scheduleUpdate);
   useNotificationPrefs.subscribe((s, prev) => {
     if (s.pushToken === prev.pushToken) scheduleUpdate();
   });
   // Новий день: питання дня й відлік до дат змінились
   AppState.addEventListener('change', (state) => {
-    if (state === 'active') scheduleUpdate();
+    if (state === 'active') {
+      scheduleUpdate();
+      void refreshCapsules();
+    }
   });
   scheduleUpdate();
+  void refreshCapsules();
 }
 
 function openUrl(response: Notifications.NotificationResponse | null): void {

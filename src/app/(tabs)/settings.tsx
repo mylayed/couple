@@ -1,7 +1,14 @@
-import { LinkBreakIcon, SignOutIcon, TrashIcon } from 'phosphor-react-native';
+import {
+  ImageSquareIcon,
+  LinkBreakIcon,
+  SignOutIcon,
+  TrashIcon,
+  XIcon,
+} from 'phosphor-react-native';
 import { useState } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 
+import { Avatar } from '@/components/Avatar';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Chip } from '@/components/Chip';
@@ -10,9 +17,10 @@ import { Screen } from '@/components/Screen';
 import { Text } from '@/components/Text';
 import { TextField } from '@/components/TextField';
 import { ToggleRow } from '@/components/ToggleRow';
-import { deleteAccount, signOut, updateProfile } from '@/services/auth';
+import { deleteAccount, signOut, updateAvatar, updateProfile } from '@/services/auth';
 import { leaveCouple, setStartDate } from '@/services/couple';
 import { requestNotificationPermission } from '@/services/notifications';
+import { pickPhoto } from '@/services/photos';
 import { useAuth, type Profile } from '@/store/auth';
 import { useCouple, type Couple, type Partner } from '@/store/couple';
 import { useNotificationPrefs } from '@/store/notifications';
@@ -25,6 +33,54 @@ const MODES: { mode: ThemeMode; title: string }[] = [
   { mode: 'dark', title: 'Темна' },
   { mode: 'system', title: 'Системна' },
 ];
+
+// Фото профілю бачить і партнер; без мережі змінити його не вийде
+function AvatarRow({ profile }: { profile: Profile }) {
+  const { spacing } = useTheme();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const change = async (pick: boolean) => {
+    const photo = pick ? await pickPhoto({ square: true }) : null;
+    if (pick && !photo) return;
+    setBusy(true);
+    setError(null);
+    const result = await updateAvatar(photo);
+    setBusy(false);
+    if (result.error) setError(result.error);
+  };
+
+  return (
+    <View style={{ gap: spacing.sm }}>
+      <View style={[styles.row, { gap: spacing.md }]}>
+        <Avatar name={profile.name} path={profile.avatar_url} size={72} />
+        <View style={{ flex: 1, gap: spacing.xs }}>
+          <Button
+            title={busy ? 'Зберігаємо…' : profile.avatar_url ? 'Змінити фото' : 'Додати фото'}
+            icon={ImageSquareIcon}
+            variant="secondary"
+            disabled={busy}
+            onPress={() => change(true)}
+          />
+          {profile.avatar_url ? (
+            <Button
+              title="Прибрати"
+              icon={XIcon}
+              variant="ghost"
+              disabled={busy}
+              onPress={() => change(false)}
+            />
+          ) : null}
+        </View>
+      </View>
+      {error ? (
+        <Text variant="caption" color="primary">
+          {error}
+        </Text>
+      ) : null}
+    </View>
+  );
+}
 
 // Поля ініціалізуються з профілю один раз; key на батьківському рівні скидає їх після зміни профілю
 function ProfileCard({ profile }: { profile: Profile }) {
@@ -51,6 +107,7 @@ function ProfileCard({ profile }: { profile: Profile }) {
   return (
     <Card style={{ gap: spacing.md }}>
       <Text variant="subtitle">Профіль</Text>
+      <AvatarRow profile={profile} />
       <TextField
         label="Ім'я"
         value={name}
@@ -118,7 +175,12 @@ function CoupleCard({ couple, partner }: { couple: Couple; partner: Partner | nu
   return (
     <Card style={{ gap: spacing.md }}>
       <Text variant="subtitle">Пара</Text>
-      {partner ? <Text color="textMuted">Твоя пара: {partner.name}</Text> : null}
+      {partner ? (
+        <View style={[styles.row, { gap: spacing.md }]}>
+          <Avatar name={partner.name} path={partner.avatar_url} size={44} />
+          <Text color="textMuted">Твоя пара: {partner.name}</Text>
+        </View>
+      ) : null}
       <DateField
         label="Дата початку стосунків"
         value={startDate}
@@ -140,7 +202,8 @@ function CoupleCard({ couple, partner }: { couple: Couple; partner: Partner | nu
       {confirmLeave ? (
         <View style={{ gap: spacing.sm }}>
           <Text>
-            Пару буде роз’єднано для вас обох, а всі спільні дати, моменти й відповіді видалено.
+            Пару буде роз’єднано для вас обох, а всі спільні дати, моменти, відповіді й спогади з
+            фото видалено.
           </Text>
           <Button
             title={busy ? 'Роз’єднуємо…' : 'Так, роз’єднати'}
@@ -215,14 +278,14 @@ function NotificationsCard() {
       />
       <ToggleRow
         title="Важливі дати"
-        description="Напередодні й у сам день"
+        description="Напередодні й у сам день, а також відкриття капсули часу"
         value={prefs.dateReminders}
         onValueChange={(dateReminders) => set({ dateReminders })}
         disabled={!prefs.enabled}
       />
       <ToggleRow
         title="Дії партнера"
-        description="Листівки, дотики, відповіді й коментарі"
+        description="Листівки, дотики, відповіді, спогади й коментарі"
         value={prefs.partnerActivity}
         onValueChange={(partnerActivity) => set({ partnerActivity })}
         disabled={!prefs.enabled}

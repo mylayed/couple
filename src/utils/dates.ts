@@ -77,6 +77,30 @@ export function formatDuration({ years, months, days }: ReturnType<typeof durati
   return parts.length ? parts.join(' ') : 'Сьогодні ваш перший день';
 }
 
+const MONTHS_NOMINATIVE = [
+  'Січень',
+  'Лютий',
+  'Березень',
+  'Квітень',
+  'Травень',
+  'Червень',
+  'Липень',
+  'Серпень',
+  'Вересень',
+  'Жовтень',
+  'Листопад',
+  'Грудень',
+];
+
+// «Жовтень 2026»; month з 0
+export function formatMonthYear(year: number, month: number): string {
+  return `${MONTHS_NOMINATIVE[month]} ${year}`;
+}
+
+export function monthName(month: number): string {
+  return MONTHS_NOMINATIVE[month];
+}
+
 const MONTHS_GENITIVE = [
   'січня',
   'лютого',

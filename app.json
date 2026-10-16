@@ -37,6 +37,14 @@
       ],
       "expo-secure-store",
       [
+        "expo-image-picker",
+        {
+          "photosPermission": "Dotyk відкриває галерею, щоб додати фото до спогаду чи профілю",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
+      ],
+      [
         "expo-notifications",
         {
           "color": "#FF5D73"

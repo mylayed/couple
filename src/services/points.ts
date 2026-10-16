@@ -12,9 +12,10 @@ export const POINTS = {
   question: 5, // обоє відповіли на питання дня
   moment: 5, // відмітка «Коли ми востаннє…» (одна на дію за день)
   dream: 15, // здійснена мрія з бакет-ліста
+  memory: 5, // спогад у стрічці
 } as const;
 
-export type PointSource = 'games' | 'challenges' | 'questions' | 'moments' | 'dreams';
+export type PointSource = 'games' | 'challenges' | 'questions' | 'moments' | 'dreams' | 'memories';
 
 export const POINT_SOURCES: Record<PointSource, string> = {
   games: 'Ігри',
@@ -22,6 +23,7 @@ export const POINT_SOURCES: Record<PointSource, string> = {
   questions: 'Питання дня',
   moments: 'Моменти',
   dreams: 'Мрії',
+  memories: 'Спогади',
 };
 
 // Назва рівня й стадія малюнка дерева (0–7)
@@ -84,6 +86,7 @@ export function usePoints(): Points {
   const answers = useRows('daily_answers');
   const logs = useRows('moment_logs');
   const dreams = useRows('bucket_items');
+  const memories = useRows('memories');
   const userId = useAuth((s) => s.session?.user.id);
 
   return useMemo(() => {
@@ -111,8 +114,9 @@ export function usePoints(): Points {
       questions: bothDays.size * POINTS.question,
       moments: momentDays.size * POINTS.moment,
       dreams: dreams.filter((d) => d.done_at).length * POINTS.dream,
+      memories: memories.length * POINTS.memory,
     };
     const total = Object.values(bySource).reduce((sum, n) => sum + n, 0);
     return { total, bySource, level: levelFor(total) };
-  }, [rounds, challenges, answers, logs, dreams, userId]);
+  }, [rounds, challenges, answers, logs, dreams, memories, userId]);
 }

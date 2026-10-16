@@ -1,17 +1,16 @@
 import { useRouter } from 'expo-router';
-import type { Icon as PhosphorIcon } from 'phosphor-react-native';
 import { PlusIcon, SparkleIcon, SpinnerIcon } from 'phosphor-react-native';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 
 import { AddField } from '@/components/AddField';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { CheckRow } from '@/components/CheckRow';
-import { Icon } from '@/components/Icon';
 import { ListItem } from '@/components/ListItem';
 import { listKindGlyph } from '@/components/ListKindIcon';
 import { Screen } from '@/components/Screen';
 import { Text } from '@/components/Text';
+import { ToolCard } from '@/components/ToolCard';
 import {
   addBucketItem,
   MAX_ITEM_TITLE,
@@ -24,35 +23,6 @@ import { useTheme } from '@/theme/ThemeProvider';
 import { pluralUk } from '@/utils/dates';
 
 const BUCKET_PREVIEW = 5;
-
-function ToolCard({
-  icon,
-  title,
-  subtitle,
-  onPress,
-}: {
-  icon: PhosphorIcon;
-  title: string;
-  subtitle: string;
-  onPress: () => void;
-}) {
-  const { spacing } = useTheme();
-  return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={onPress}
-      style={({ pressed }) => ({ flex: 1, opacity: pressed ? 0.7 : 1 })}
-    >
-      <Card style={{ flex: 1, gap: spacing.xs, padding: spacing.md }}>
-        <Icon icon={icon} size={28} color="primary" weight="duotone" />
-        <Text variant="subtitle">{title}</Text>
-        <Text variant="caption" color="textMuted">
-          {subtitle}
-        </Text>
-      </Card>
-    </Pressable>
-  );
-}
 
 function listSubtitle(l: ListSummary): string {
   if (l.openCount === 0 && l.doneCount === 0) return 'Порожній';

@@ -1,10 +1,12 @@
 import { AuthError, isAuthError } from '@supabase/supabase-js';
+import { randomUUID } from 'expo-crypto';
 
 import { loadProfile, useAuth, type Profile } from '@/store/auth';
 import { useNotificationPrefs } from '@/store/notifications';
-import { clearCoupleOnSignOut } from './couple';
+import { clearCoupleOnSignOut, removeCoupleFiles } from './couple';
 import { signOutGoogle } from './google';
 import { unregisterPushToken } from './notifications';
+import { compressPhoto, removeFolder, removePhotos, uploadPhoto, type Photo } from './photos';
 import { supabase } from './supabase';
 
 // Усі дії повертають текст помилки українською або null, якщо все вдалося
@@ -165,7 +167,11 @@ export async function signOut(): Promise<Result> {
 }
 
 export async function deleteAccount(): Promise<Result> {
+  const userId = useAuth.getState().session?.user.id;
   try {
+    // Файли SQL не видаляє, тож прибираємо їх, поки сесія ще діє
+    await removeCoupleFiles();
+    if (userId) await removeFolder('avatars', userId);
     const { error } = await supabase.rpc('delete_account');
     if (error) return { error: 'Не вдалося видалити акаунт. Спробуй ще раз.' };
     // Токени на сервері видалились разом з акаунтом
@@ -192,4 +198,34 @@ export async function updateProfile(
   } catch (e) {
     return { error: toMessage(e) };
   }
+}
+
+const AVATAR_SIDE = 512;
+const AVATAR_QUALITY = 0.8;
+
+// Аватар у приватному бакеті avatars, у теці користувача; null прибирає фото
+export async function updateAvatar(photo: Photo | null): Promise<Result> {
+  const userId = useAuth.getState().session?.user.id;
+  if (!userId) return { error: 'Спершу увійди в акаунт.' };
+  const previous = useAuth.getState().profile?.avatar_url ?? null;
+  let path: string | null = null;
+  if (photo) {
+    try {
+      const small = await compressPhoto(photo, AVATAR_SIDE, AVATAR_QUALITY);
+      // Нова назва щоразу: інакше кеш показував би старе фото
+      path = `${userId}/${randomUUID().slice(0, 8)}.jpg`;
+      if ((await uploadPhoto('avatars', path, small.uri)) !== 'ok') {
+        return { error: 'Не вдалося завантажити фото. Перевір інтернет і спробуй ще раз.' };
+      }
+    } catch {
+      return { error: 'Не вдалося обробити фото. Спробуй інше.' };
+    }
+  }
+  const result = await updateProfile({ avatar_url: path });
+  if (result.error) {
+    void removePhotos('avatars', [path]);
+    return result;
+  }
+  void removePhotos('avatars', [previous]);
+  return result;
 }

@@ -3,6 +3,7 @@ import { AppState } from 'react-native';
 
 import { useAuth } from '@/store/auth';
 import { resetCoupleState, useCouple, type Couple, type Partner } from '@/store/couple';
+import { clearPhotoUrls, removeFolder } from './photos';
 import { resumeSync, setSyncCouple } from './sync';
 import { supabase } from './supabase';
 
@@ -90,6 +91,7 @@ export async function setStartDate(startedOn: string | null): Promise<Result> {
 
 // Роз'єднання видаляє пару і всі спільні дані для обох
 export async function leaveCouple(): Promise<Result> {
+  await removeCoupleFiles();
   const { error, status } = await supabase.rpc('leave_couple');
   if (error) return { error: toMessage(error, status) };
   // Партнерові видалення через Realtime не приходить, тож повідомляємо його напряму
@@ -147,6 +149,14 @@ function subscribe(couple: Couple | null, partner: Partner | null): void {
 function resetLocalCouple(): void {
   resetCoupleState();
   setSyncCouple(null);
+  clearPhotoUrls();
+}
+
+// Фото спогадів пари. SQL не може видалити файли зі Storage, тому це робить застосунок
+// перед роз'єднанням пари чи видаленням акаунта
+export async function removeCoupleFiles(): Promise<void> {
+  const coupleId = useCouple.getState().couple?.id;
+  if (coupleId) await removeFolder('memories', coupleId);
 }
 
 let started = false;
