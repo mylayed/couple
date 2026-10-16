@@ -43,7 +43,7 @@ export async function refreshCouple(): Promise<Result> {
   const { data, error, status } = await supabase
     .from('couple_members')
     .select(
-      'user_id, joined_at, couple:couples(id, invite_code, started_on, plus_until, created_at), profile:profiles(id, name, avatar_url, birth_date)',
+      'user_id, joined_at, couple:couples(id, invite_code, started_on, plus_until, created_at), profile:profiles(id, name, avatar_url, birth_date, ai_enabled)',
     )
     .returns<MemberRow[]>();
 

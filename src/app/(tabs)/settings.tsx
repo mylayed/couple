@@ -1,11 +1,13 @@
+import { useRouter } from 'expo-router';
 import {
   ImageSquareIcon,
+  InfoIcon,
   LinkBreakIcon,
   SignOutIcon,
   TrashIcon,
   XIcon,
 } from 'phosphor-react-native';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 
 import { Avatar } from '@/components/Avatar';
@@ -17,6 +19,7 @@ import { Screen } from '@/components/Screen';
 import { Text } from '@/components/Text';
 import { TextField } from '@/components/TextField';
 import { ToggleRow } from '@/components/ToggleRow';
+import { quotaText, refreshAiQuota, useAiConsent, useAiQuota } from '@/services/ai';
 import { deleteAccount, signOut, updateAvatar, updateProfile } from '@/services/auth';
 import { leaveCouple, setStartDate } from '@/services/couple';
 import { requestNotificationPermission } from '@/services/notifications';
@@ -294,6 +297,56 @@ function NotificationsCard() {
   );
 }
 
+function AiCard() {
+  const router = useRouter();
+  const { spacing } = useTheme();
+  const consent = useAiConsent();
+  const quota = useAiQuota((s) => s.quota);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (consent.mine) void refreshAiQuota();
+  }, [consent.mine]);
+
+  const toggle = async (ai_enabled: boolean) => {
+    setBusy(true);
+    setError(null);
+    const result = await updateProfile({ ai_enabled });
+    setBusy(false);
+    if (result.error) setError(result.error);
+  };
+
+  return (
+    <Card style={{ gap: spacing.md }}>
+      <Text variant="subtitle">ШІ</Text>
+      <ToggleRow
+        title="Використовувати ШІ"
+        description="Ідеї побачень, помічник для листівок, історія року"
+        value={consent.mine}
+        onValueChange={toggle}
+        disabled={busy}
+      />
+      {error ? (
+        <Text variant="caption" color="primary">
+          {error}
+        </Text>
+      ) : null}
+      {consent.mine && quota ? (
+        <Text variant="caption" color="textMuted">
+          {quotaText(quota)}
+        </Text>
+      ) : null}
+      <Button
+        title="Які дані надсилаються"
+        icon={InfoIcon}
+        variant="ghost"
+        onPress={() => router.push('/ai')}
+      />
+    </Card>
+  );
+}
+
 export default function Settings() {
   const { spacing, mode, setMode } = useTheme();
   const profile = useAuth((s) => s.profile);
@@ -335,6 +388,8 @@ export default function Settings() {
       {couple ? <CoupleCard key={couple.id} couple={couple} partner={partner} /> : null}
 
       {Platform.OS !== 'web' ? <NotificationsCard /> : null}
+
+      {couple ? <AiCard /> : null}
 
       <Card style={{ gap: spacing.md }}>
         <Text variant="subtitle">Акаунт</Text>

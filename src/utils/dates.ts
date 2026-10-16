@@ -155,3 +155,9 @@ export function formatTimeAgo(iso: string, now: Date = new Date()): string {
   if (hours < 24) return `${hours} год тому`;
   return formatDaysAgo(daysBetween(new Date(iso), now));
 }
+
+// «09:05»
+export function formatTimeOfDay(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}

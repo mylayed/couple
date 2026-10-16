@@ -8,6 +8,8 @@ export type Profile = {
   name: string;
   avatar_url: string | null;
   birth_date: string | null; // YYYY-MM-DD
+  // Згода на ШІ; у кеші з попередніх версій поля може не бути, тоді вважаємо true
+  ai_enabled?: boolean;
 };
 
 type AuthState = {
@@ -33,7 +35,7 @@ export async function loadProfile(): Promise<void> {
   if (!userId) return;
   const { data } = await supabase
     .from('profiles')
-    .select('id, name, avatar_url, birth_date')
+    .select('id, name, avatar_url, birth_date, ai_enabled')
     .eq('id', userId)
     .maybeSingle<Profile>();
   // Користувач міг вийти, поки йшов запит

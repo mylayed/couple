@@ -1,8 +1,10 @@
 import { useRouter } from 'expo-router';
-import { ChartBarIcon, CheckCircleIcon } from 'phosphor-react-native';
-import { useState } from 'react';
+import { ChartBarIcon, CheckCircleIcon, MagicWandIcon } from 'phosphor-react-native';
+import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 
+import { AiHint } from '@/components/AiHint';
+import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Chip } from '@/components/Chip';
 import { EmptyState } from '@/components/EmptyState';
@@ -12,7 +14,10 @@ import { momentGlyph } from '@/components/MomentIcon';
 import { Photo } from '@/components/Photo';
 import { Screen } from '@/components/Screen';
 import { Text } from '@/components/Text';
-import { useSummaryYears, useYearSummary } from '@/services/yearSummary';
+import { askAi, saveYearStory, useAiConsent, useYearStory } from '@/services/ai';
+import { useSummaryYears, useYearSummary, type YearSummary } from '@/services/yearSummary';
+import { useAuth } from '@/store/auth';
+import { useCouple } from '@/store/couple';
 import { useTheme } from '@/theme/ThemeProvider';
 import { formatDayMonth, monthName, parseIsoDate, pluralUk } from '@/utils/dates';
 
@@ -29,6 +34,105 @@ function Stat({ value, label }: { value: number; label: string }) {
       <Text variant="caption" color="textMuted">
         {label}
       </Text>
+    </Card>
+  );
+}
+
+const MAX_CAPTIONS = 20;
+
+// Рівномірна вибірка, щоб у довгому році були і початок, і кінець
+function spread<T>(items: T[], max: number): T[] {
+  if (items.length <= max) return items;
+  return Array.from({ length: max }, (_, i) => items[Math.floor((i * items.length) / max)]);
+}
+
+// Коротка тепла історія року від ШІ. Готовий текст зберігається на телефоні;
+// якщо дані року змінились, пропонуємо оновити.
+function YearStoryCard({ s }: { s: YearSummary }) {
+  const { spacing } = useTheme();
+  const consent = useAiConsent();
+  const me = useAuth((st) => st.profile?.name ?? '');
+  const partnerName = useCouple((st) => st.partner?.name ?? '');
+  const story = useYearStory(s.year);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const input = useMemo(
+    () => ({
+      year: s.year,
+      me,
+      partner: partnerName,
+      stats: {
+        dates: s.dates,
+        trips: s.trips,
+        memories: s.memories.length,
+        questions: s.questions,
+        games: s.games,
+        challenges: s.challenges,
+        notes: s.notes,
+        touches: s.touches,
+      },
+      busiestMonth: s.busiestMonth,
+      topMoments: s.topMoments.map((m) => ({ title: m.title, count: m.count })),
+      dreams: s.dreams.map((d) => d.title),
+      captions: spread(
+        s.memories.map((m) => m.caption?.trim() ?? '').filter(Boolean),
+        MAX_CAPTIONS,
+      ),
+    }),
+    [s, me, partnerName],
+  );
+  const inputKey = JSON.stringify(input);
+
+  if (!consent.mine) return null;
+
+  const tell = async () => {
+    setBusy(true);
+    setError(null);
+    const { data, error: failed } = await askAi('year_story', input);
+    setBusy(false);
+    if (failed !== null) return setError(failed);
+    saveYearStory(s.year, { ...data, input: inputKey });
+  };
+
+  return (
+    <Card style={{ gap: spacing.md }}>
+      {story ? (
+        <>
+          <Text variant="subtitle">{story.title}</Text>
+          <Text>{story.text}</Text>
+        </>
+      ) : (
+        <>
+          <Text variant="subtitle">Історія вашого року</Text>
+          <Text color="textMuted">
+            ШІ складе з ваших моментів, мрій і спогадів кілька теплих рядків.
+          </Text>
+        </>
+      )}
+      {!consent.partner ? (
+        <Text variant="caption" color="textMuted">
+          {partnerName || 'Партнер'} вимикає ШІ, тож спільні дані пари ми не надсилаємо.
+        </Text>
+      ) : !story || story.input !== inputKey ? (
+        <>
+          {error ? (
+            <Text variant="caption" color="primary">
+              {error}
+            </Text>
+          ) : null}
+          <Button
+            title={
+              busy ? 'Пишемо…' : story ? 'Оновити з новими подіями ✨' : 'Розповісти наш рік ✨'
+            }
+            icon={MagicWandIcon}
+            variant="secondary"
+            disabled={busy}
+            onPress={tell}
+          />
+          <AiHint />
+        </>
+      ) : null}
     </Card>
   );
 }
@@ -81,6 +185,8 @@ export default function YearScreen() {
         />
       ) : (
         <>
+          <YearStoryCard s={s} />
+
           {stats.length > 0 ? (
             <View style={[styles.row, { gap: spacing.md }]}>
               {stats.map((stat) => (

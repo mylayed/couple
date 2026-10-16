@@ -15,7 +15,7 @@ export type Couple = {
   created_at: string;
 };
 
-export type Partner = Pick<Profile, 'id' | 'name' | 'avatar_url' | 'birth_date'>;
+export type Partner = Pick<Profile, 'id' | 'name' | 'avatar_url' | 'birth_date' | 'ai_enabled'>;
 
 type CoupleState = {
   // Чий це кеш: після входу під іншим акаунтом його треба скинути

@@ -186,7 +186,7 @@ export async function deleteAccount(): Promise<Result> {
 }
 
 export async function updateProfile(
-  changes: Partial<Pick<Profile, 'name' | 'birth_date' | 'avatar_url'>>,
+  changes: Partial<Pick<Profile, 'name' | 'birth_date' | 'avatar_url' | 'ai_enabled'>>,
 ): Promise<Result> {
   const userId = useAuth.getState().session?.user.id;
   if (!userId) return { error: 'Спершу увійди в акаунт.' };

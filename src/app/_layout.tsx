@@ -71,6 +71,7 @@ function Shell() {
           <Stack.Screen name="memory/[id]" options={detailHeader} />
           <Stack.Screen name="capsule" options={{ ...detailHeader, title: 'Капсула часу' }} />
           <Stack.Screen name="year" options={{ ...detailHeader, title: 'Підсумок року' }} />
+          <Stack.Screen name="ai" options={{ ...detailHeader, title: 'ШІ і ваші дані' }} />
         </Stack.Protected>
       </Stack>
     </>
