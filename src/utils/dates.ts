@@ -121,3 +121,13 @@ export function formatOrdinal(n: number): string {
   const suffix = { 1: 'ша', 2: 'га', 3: 'тя', 7: 'ма', 8: 'ма' }[mod10] ?? 'та';
   return `${n}-${suffix}`;
 }
+
+// «щойно», «5 хв тому», «3 год тому», далі як formatDaysAgo
+export function formatTimeAgo(iso: string, now: Date = new Date()): string {
+  const minutes = Math.floor((now.getTime() - Date.parse(iso)) / 60_000);
+  if (minutes < 1) return 'щойно';
+  if (minutes < 60) return `${minutes} хв тому`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} год тому`;
+  return formatDaysAgo(daysBetween(new Date(iso), now));
+}

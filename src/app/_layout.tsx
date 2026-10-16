@@ -10,6 +10,7 @@ import { startNotifications } from '@/services/notifications';
 import { selectIsPaired, useCouple } from '@/store/couple';
 import { selectSignedIn, startAuthListener, useAuth } from '@/store/auth';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
+import { startWidgetUpdates } from '@/widget';
 import { fonts } from '@/theme/tokens';
 
 SplashScreen.preventAutoHideAsync();
@@ -51,6 +52,10 @@ function Shell() {
           <Stack.Screen name="dates/[id]" options={detailHeader} />
           <Stack.Screen name="moment/new" options={{ ...detailHeader, title: 'Новий момент' }} />
           <Stack.Screen name="moment/[id]" options={detailHeader} />
+          <Stack.Screen name="notes/index" options={{ ...detailHeader, title: 'Листівки' }} />
+          <Stack.Screen name="notes/new" options={{ ...detailHeader, title: 'Нова листівка' }} />
+          <Stack.Screen name="notes/[id]" options={detailHeader} />
+          <Stack.Screen name="mood" options={{ ...detailHeader, title: 'Настрій дня' }} />
         </Stack.Protected>
       </Stack>
     </>
@@ -72,6 +77,7 @@ export default function RootLayout() {
     startAuthListener();
     startCoupleListener();
     startNotifications();
+    startWidgetUpdates();
   }, []);
 
   const fontsReady = loaded || Boolean(error);

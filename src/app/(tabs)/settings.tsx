@@ -222,7 +222,7 @@ function NotificationsCard() {
       />
       <ToggleRow
         title="Дії партнера"
-        description="Нова відповідь, відмітка чи дата"
+        description="Листівки, дотики, відповіді й коментарі"
         value={prefs.partnerActivity}
         onValueChange={(partnerActivity) => set({ partnerActivity })}
         disabled={!prefs.enabled}

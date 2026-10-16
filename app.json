@@ -41,6 +41,28 @@
         {
           "color": "#FF5D73"
         }
+      ],
+      [
+        "react-native-android-widget",
+        {
+          "fonts": [
+            "./node_modules/@expo-google-fonts/unbounded/700Bold/Unbounded_700Bold.ttf",
+            "./node_modules/@expo-google-fonts/manrope/500Medium/Manrope_500Medium.ttf"
+          ],
+          "widgets": [
+            {
+              "name": "Together",
+              "label": "Dotyk: разом",
+              "description": "Скільки днів ви разом і що було востаннє",
+              "minWidth": "110dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 2,
+              "targetCellHeight": 2,
+              "resizeMode": "horizontal|vertical",
+              "updatePeriodMillis": 3600000
+            }
+          ]
+        }
       ]
     ],
     "experiments": {

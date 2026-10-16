@@ -45,6 +45,9 @@ export const StorageKeys = {
   couple: 'couple',
   sync: 'sync',
   notifications: 'notifications',
+  moods: 'moods',
+  noteDraft: 'note-draft',
+  widget: 'widget',
 } as const;
 
 // Адаптер для persist-мідлвара Zustand: MMKV синхронний, тому стан доступний одразу при запуску

@@ -51,17 +51,66 @@ export type DailyAnswer = SyncedBase & {
   answer: string;
 };
 
+export type TouchKind = 'heart' | 'hug' | 'thinking';
+
+export type Note = SyncedBase & {
+  body: string;
+  style: 'rose' | 'violet' | 'mint' | 'dawn';
+  // Відкриття й реакцію ставить отримувач
+  opened_at: string | null;
+  reaction: TouchKind | null;
+  created_by: string | null;
+};
+
+export type Touch = SyncedBase & {
+  kind: TouchKind;
+  created_by: string | null;
+};
+
+export type MoodKind = 'great' | 'good' | 'ok' | 'low' | 'bad';
+
+// Лише те, що партнер може бачити: приватне лишається на телефоні (src/store/moods.ts)
+export type Mood = SyncedBase & {
+  user_id: string;
+  mood_date: string; // YYYY-MM-DD
+  mood: MoodKind;
+  note: string | null;
+};
+
+export type AnswerComment = SyncedBase & {
+  answer_id: string;
+  body: string;
+  created_by: string | null;
+};
+
 export type SyncedTables = {
   important_dates: ImportantDate;
   moments: Moment;
   moment_logs: MomentLog;
   daily_answers: DailyAnswer;
+  answer_comments: AnswerComment;
+  notes: Note;
+  touches: Touch;
+  moods: Mood;
 };
 
 export type SyncedTable = keyof SyncedTables;
 
-// Порядок важливий: відмітки посилаються на дії, тому дії відправляються першими
-const TABLES: SyncedTable[] = ['important_dates', 'moments', 'moment_logs', 'daily_answers'];
+// Порядок важливий: відмітки посилаються на дії, коментарі — на відповіді,
+// тому батьківські записи відправляються першими
+const TABLES: SyncedTable[] = [
+  'important_dates',
+  'moments',
+  'moment_logs',
+  'daily_answers',
+  'answer_comments',
+  'notes',
+  'touches',
+  'moods',
+];
+
+// Таблиці, де власник записаний у user_id, а не в created_by
+const USER_OWNED: SyncedTable[] = ['daily_answers', 'moods'];
 
 // Поля, які заповнює сервер або сам модуль синхронізації
 type ManagedField =
@@ -85,12 +134,21 @@ const emptyRows = (): SyncState['rows'] => ({
   moments: {},
   moment_logs: {},
   daily_answers: {},
+  answer_comments: {},
+  notes: {},
+  touches: {},
+  moods: {},
 });
 
 export const useSync = create<SyncState>()(
   persist(() => ({ coupleId: null, rows: emptyRows(), cursors: {}, outbox: [] }) as SyncState, {
     name: StorageKeys.sync,
     storage: createJSONStorage(() => zustandStorage),
+    // У кеші зі старішої версії застосунку може не бути нових таблиць
+    merge: (persisted, current) => {
+      const saved = (persisted ?? {}) as Partial<SyncState>;
+      return { ...current, ...saved, rows: { ...emptyRows(), ...saved.rows } };
+    },
   }),
 );
 
@@ -147,9 +205,11 @@ function enqueue(table: SyncedTable, id: string): void {
 }
 
 // Створює або оновлює запис. Повертає його id.
+// restore повертає м'яко видалений запис, наприклад настрій, яким знову діляться з партнером.
 export function saveRow<T extends SyncedTable>(
   table: T,
   input: RowInput<T> | (Partial<RowInput<T>> & { id: string }),
+  { restore = false }: { restore?: boolean } = {},
 ): string | null {
   const { coupleId } = useSync.getState();
   const userId = useAuth.getState().session?.user.id;
@@ -158,10 +218,11 @@ export function saveRow<T extends SyncedTable>(
   const id = input.id ?? randomUUID();
   const now = new Date().toISOString();
   const existing = tableRows(table)[id];
-  const owner = table === 'daily_answers' ? { user_id: userId } : { created_by: userId };
+  const owner = USER_OWNED.includes(table) ? { user_id: userId } : { created_by: userId };
   const row = {
     ...(existing ?? { created_at: now, deleted_at: null, ...owner }),
     ...input,
+    ...(restore ? { deleted_at: null } : {}),
     id,
     couple_id: coupleId,
     updated_at: now,

@@ -1,5 +1,11 @@
 import { useRouter } from 'expo-router';
-import { BellIcon, CalendarHeartIcon, ChatCircleDotsIcon } from 'phosphor-react-native';
+import {
+  BellIcon,
+  CalendarHeartIcon,
+  ChatCircleDotsIcon,
+  EnvelopeSimpleIcon,
+  PencilSimpleLineIcon,
+} from 'phosphor-react-native';
 import { Platform, View } from 'react-native';
 
 import { Button } from '@/components/Button';
@@ -9,11 +15,15 @@ import { Icon } from '@/components/Icon';
 import { ListItem } from '@/components/ListItem';
 import { momentGlyph } from '@/components/MomentIcon';
 import { Screen } from '@/components/Screen';
+import { TouchButton } from '@/components/TouchButton';
 import { Text } from '@/components/Text';
 import { useCalendar } from '@/services/calendar';
 import { useMomentSummaries } from '@/services/moments';
+import { moodMeta, useMyMood, usePartnerMood } from '@/services/moods';
+import { useNotes } from '@/services/notes';
 import { requestNotificationPermission } from '@/services/notifications';
 import { useTodayQuestion } from '@/services/questions';
+import { sendTouch, TOUCH_PHRASES, TOUCHES, useLastTouches } from '@/services/touches';
 import { useAuth } from '@/store/auth';
 import { useCouple } from '@/store/couple';
 import { useNotificationPrefs } from '@/store/notifications';
@@ -26,6 +36,7 @@ import {
   formatDaysLeft,
   formatDuration,
   formatOrdinal,
+  formatTimeAgo,
   nextOccurrence,
   parseIsoDate,
   pluralUk,
@@ -64,6 +75,118 @@ function TogetherCounter() {
         />
       ) : null}
     </View>
+  );
+}
+
+function TouchCard() {
+  const { spacing } = useTheme();
+  const partnerName = useCouple((s) => s.partner?.name ?? 'Партнер');
+  const { fromPartner, fromMe } = useLastTouches();
+
+  const status = fromPartner
+    ? `${partnerName} ${TOUCH_PHRASES[fromPartner.kind]} · ${formatTimeAgo(fromPartner.created_at)}`
+    : fromMe
+      ? `Твій дотик надіслано ${formatTimeAgo(fromMe.created_at)}`
+      : 'Один дотик — і партнер знає, що ти поруч';
+
+  return (
+    <Card style={{ gap: spacing.md }}>
+      <Text variant="subtitle">Дотик</Text>
+      <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+        {TOUCHES.map((t) => (
+          <TouchButton
+            key={t.kind}
+            icon={t.icon}
+            label={t.label}
+            onPress={() => sendTouch(t.kind)}
+          />
+        ))}
+      </View>
+      <Text variant="caption" color={fromPartner ? 'primary' : 'textMuted'} align="center">
+        {status}
+      </Text>
+    </Card>
+  );
+}
+
+function MoodCard() {
+  const router = useRouter();
+  const { spacing } = useTheme();
+  const partnerName = useCouple((s) => s.partner?.name ?? 'Партнер');
+  const mine = useMyMood();
+  const partner = usePartnerMood();
+
+  return (
+    <Card style={{ gap: spacing.md }}>
+      <Text variant="subtitle">Настрій дня</Text>
+      <ListItem
+        icon={mine ? moodMeta(mine.mood).icon : undefined}
+        title={
+          mine ? `Ти: ${moodMeta(mine.mood).label.toLowerCase()}` : 'Ти ще не ділишся настроєм'
+        }
+        subtitle={
+          mine
+            ? [mine.note, mine.visibility === 'private' ? 'бачиш лише ти' : null]
+                .filter(Boolean)
+                .join(' · ') || undefined
+            : undefined
+        }
+        onPress={() => router.push('/mood')}
+      />
+      {partner ? (
+        <ListItem
+          icon={moodMeta(partner.mood).icon}
+          title={`${partnerName}: ${moodMeta(partner.mood).label.toLowerCase()}`}
+          subtitle={partner.note ?? undefined}
+        />
+      ) : (
+        <Text variant="caption" color="textMuted">
+          {partnerName} ще не ділиться настроєм сьогодні
+        </Text>
+      )}
+    </Card>
+  );
+}
+
+function NotesCard() {
+  const router = useRouter();
+  const { spacing } = useTheme();
+  const partnerName = useCouple((s) => s.partner?.name ?? 'Партнер');
+  const { unopened } = useNotes();
+  const latest = unopened[0];
+
+  return (
+    <Card style={{ gap: spacing.md }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+        <Icon icon={EnvelopeSimpleIcon} color="primary" weight="duotone" />
+        <Text variant="subtitle">Листівки</Text>
+      </View>
+      {latest ? (
+        <>
+          <Text color="primary">
+            {unopened.length > 1
+              ? `${partnerName} надсилає тобі листівки: ${unopened.length}`
+              : `${partnerName} надсилає тобі листівку 💌`}
+          </Text>
+          <Button title="Відкрити" onPress={() => router.push(`/notes/${latest.id}`)} />
+        </>
+      ) : (
+        <Text color="textMuted">Тепле слово серед дня — найкращий сюрприз.</Text>
+      )}
+      <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+        <View style={{ flex: 1 }}>
+          <Button
+            title="Написати"
+            icon={PencilSimpleLineIcon}
+            variant="secondary"
+            onPress={() => router.push('/notes/new')}
+          />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Button title="Усі" variant="ghost" onPress={() => router.push('/notes')} />
+        </View>
+      </View>
+    </Card>
   );
 }
 
@@ -197,7 +320,10 @@ export default function Home() {
 
       <TogetherCounter />
       <NotificationsPrompt />
+      <TouchCard />
+      <NotesCard />
       <QuestionCard />
+      <MoodCard />
       <OverdueMoments />
       <UpcomingDates />
     </Screen>

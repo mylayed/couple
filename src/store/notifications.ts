@@ -13,7 +13,7 @@ export type NotificationPrefs = {
   questionHour: number; // 0–23
   momentReminders: boolean;
   dateReminders: boolean;
-  // Push, коли партнер відповів на питання, відмітив момент чи додав дату
+  // Push про дії партнера: листівки, дотики, відповіді, коментарі, відмітки, дати
   partnerActivity: boolean;
   // Токен, зареєстрований на сервері; потрібен, щоб прибрати його після виходу
   pushToken: string | null;
