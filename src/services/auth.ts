@@ -1,7 +1,7 @@
 import { AuthError, isAuthError } from '@supabase/supabase-js';
 
-import { useCouple } from '@/store/couple';
 import { loadProfile, useAuth, type Profile } from '@/store/auth';
+import { clearCoupleOnSignOut } from './couple';
 import { signOutGoogle } from './google';
 import { supabase } from './supabase';
 
@@ -153,7 +153,7 @@ export async function signOut(): Promise<Result> {
     const { error } = await supabase.auth.signOut({ scope: 'local' });
     if (error) return { error: toMessage(error) };
     await signOutGoogle();
-    useCouple.getState().reset();
+    clearCoupleOnSignOut();
     return { error: null };
   } catch (e) {
     return { error: toMessage(e) };
@@ -166,7 +166,7 @@ export async function deleteAccount(): Promise<Result> {
     if (error) return { error: 'Не вдалося видалити акаунт. Спробуй ще раз.' };
     await supabase.auth.signOut({ scope: 'local' });
     await signOutGoogle();
-    useCouple.getState().reset();
+    clearCoupleOnSignOut();
     return { error: null };
   } catch (e) {
     return { error: toMessage(e) };

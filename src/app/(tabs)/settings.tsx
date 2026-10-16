@@ -8,8 +8,9 @@ import { Screen } from '@/components/Screen';
 import { Text } from '@/components/Text';
 import { TextField } from '@/components/TextField';
 import { deleteAccount, signOut, updateProfile } from '@/services/auth';
+import { leaveCouple, setStartDate } from '@/services/couple';
 import { useAuth, type Profile } from '@/store/auth';
-import { useCouple } from '@/store/couple';
+import { useCouple, type Couple, type Partner } from '@/store/couple';
 import { useTheme } from '@/theme/ThemeProvider';
 import { ThemeMode } from '@/theme/tokens';
 import { formatUkDate, parseUkDate } from '@/utils/dates';
@@ -79,11 +80,89 @@ function ProfileCard({ profile }: { profile: Profile }) {
   );
 }
 
+function CoupleCard({ couple, partner }: { couple: Couple; partner: Partner | null }) {
+  const { spacing } = useTheme();
+  const [startDate, setStartDateText] = useState(formatUkDate(couple.started_on));
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [confirmLeave, setConfirmLeave] = useState(false);
+
+  const save = async () => {
+    const iso = startDate.trim() ? parseUkDate(startDate) : null;
+    if (startDate.trim() && !iso) return setError('Дата має бути у форматі ДД.ММ.РРРР.');
+    setBusy(true);
+    setError(null);
+    const result = await setStartDate(iso);
+    setBusy(false);
+    if (result.error) setError(result.error);
+    else setSaved(true);
+  };
+
+  const leave = async () => {
+    setBusy(true);
+    setError(null);
+    const result = await leaveCouple();
+    // Після успіху захист маршрутів сам поверне на екран запрошення
+    setBusy(false);
+    if (result.error) setError(result.error);
+  };
+
+  const dirty = startDate !== formatUkDate(couple.started_on);
+
+  return (
+    <Card style={{ gap: spacing.md }}>
+      <Text variant="subtitle">Пара</Text>
+      {partner ? <Text color="textMuted">Ти в парі з {partner.name}</Text> : null}
+      <TextField
+        label="Дата початку стосунків"
+        placeholder="ДД.ММ.РРРР"
+        value={startDate}
+        onChangeText={(text) => {
+          setStartDateText(text.replace(/[^\d.]/g, '').slice(0, 10));
+          setSaved(false);
+        }}
+        keyboardType="numbers-and-punctuation"
+        error={error}
+      />
+      {saved && !dirty ? <Text color="textMuted">Збережено</Text> : null}
+      <Button
+        title={busy && !confirmLeave ? 'Зберігаємо…' : 'Зберегти'}
+        variant="secondary"
+        onPress={save}
+        disabled={!dirty || busy}
+      />
+      {confirmLeave ? (
+        <View style={{ gap: spacing.sm }}>
+          <Text>
+            Пару буде роз’єднано для вас обох, а всі спільні дати, моменти й відповіді видалено.
+          </Text>
+          <Button
+            title={busy ? 'Роз’єднуємо…' : 'Так, роз’єднати'}
+            icon={LinkBreakIcon}
+            disabled={busy}
+            onPress={leave}
+          />
+          <Button title="Скасувати" variant="ghost" onPress={() => setConfirmLeave(false)} />
+        </View>
+      ) : (
+        <Button
+          title="Роз’єднати пару"
+          icon={LinkBreakIcon}
+          variant="ghost"
+          onPress={() => setConfirmLeave(true)}
+        />
+      )}
+    </Card>
+  );
+}
+
 export default function Settings() {
   const { spacing, mode, setMode } = useTheme();
   const profile = useAuth((s) => s.profile);
   const email = useAuth((s) => s.session?.user.email);
-  const leaveCouple = useCouple((s) => s.leaveCouple);
+  const couple = useCouple((s) => s.couple);
+  const partner = useCouple((s) => s.partner);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [accountError, setAccountError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -116,15 +195,7 @@ export default function Settings() {
         </View>
       </Card>
 
-      <Card style={{ gap: spacing.md }}>
-        <Text variant="subtitle">Пара</Text>
-        <Button
-          title="Роз'єднати пару"
-          icon={LinkBreakIcon}
-          variant="secondary"
-          onPress={leaveCouple}
-        />
-      </Card>
+      {couple ? <CoupleCard key={couple.id} couple={couple} partner={partner} /> : null}
 
       <Card style={{ gap: spacing.md }}>
         <Text variant="subtitle">Акаунт</Text>

@@ -7,6 +7,13 @@ export function daysBetween(from: Date, to: Date = new Date()): number {
   return Math.floor((end - start) / DAY_MS);
 }
 
+// YYYY-MM-DD із бази — календарна дата, а не момент часу, тому читаємо її в локальному часі
+export function parseIsoDate(iso: string): Date {
+  if (iso.length !== 10) return new Date(iso);
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
 // Українські форми множини: 1 день, 2 дні, 5 днів
 export function pluralUk(n: number, forms: [one: string, few: string, many: string]): string {
   const mod10 = n % 10;

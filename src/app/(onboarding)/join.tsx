@@ -6,21 +6,25 @@ import { Button } from '@/components/Button';
 import { Screen } from '@/components/Screen';
 import { Text } from '@/components/Text';
 import { TextField } from '@/components/TextField';
-import { INVITE_CODE_LENGTH, normalizeInviteCode, useCouple } from '@/store/couple';
+import { joinCouple } from '@/services/couple';
+import { INVITE_CODE_LENGTH, normalizeInviteCode } from '@/store/couple';
 import { useTheme } from '@/theme/ThemeProvider';
 
 export default function Join() {
   const router = useRouter();
   const { spacing } = useTheme();
-  const joinCouple = useCouple((s) => s.joinCouple);
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const canSubmit = normalizeInviteCode(code).length === INVITE_CODE_LENGTH;
+  const [busy, setBusy] = useState(false);
+  const canSubmit = normalizeInviteCode(code).length === INVITE_CODE_LENGTH && !busy;
 
   // Після підключення захист маршрутів сам відкриє вкладки
-  const submit = () => {
+  const submit = async () => {
     if (!canSubmit) return;
-    if (!joinCouple(code)) setError('Цей код не підходить. Перевір його і спробуй ще раз.');
+    setBusy(true);
+    const result = await joinCouple(code);
+    setBusy(false);
+    setError(result.error);
   };
 
   return (
@@ -50,7 +54,11 @@ export default function Join() {
 
       <View style={{ flex: 1 }} />
       <View style={{ gap: spacing.sm }}>
-        <Button title="Підключитися" onPress={submit} disabled={!canSubmit} />
+        <Button
+          title={busy ? 'Підключаємо…' : 'Підключитися'}
+          onPress={submit}
+          disabled={!canSubmit}
+        />
         <Button title="Назад" variant="ghost" onPress={() => router.back()} />
       </View>
     </Screen>

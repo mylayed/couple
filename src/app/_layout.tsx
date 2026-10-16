@@ -5,7 +5,8 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 
-import { useCouple } from '@/store/couple';
+import { startCoupleListener } from '@/services/couple';
+import { selectIsPaired, useCouple } from '@/store/couple';
 import { selectSignedIn, startAuthListener, useAuth } from '@/store/auth';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
 
@@ -15,8 +16,8 @@ function Shell() {
   const { isDark, colors } = useTheme();
   // Без сесії або без пари — онбординг; куди саме всередині, вирішує (onboarding)/_layout
   const signedIn = useAuth(selectSignedIn);
-  const hasCouple = useCouple((s) => s.couple !== null);
-  const isPaired = signedIn && hasCouple;
+  const hasPartner = useCouple(selectIsPaired);
+  const isPaired = signedIn && hasPartner;
 
   return (
     <>
@@ -52,6 +53,7 @@ export default function RootLayout() {
 
   useEffect(() => {
     startAuthListener();
+    startCoupleListener();
   }, []);
 
   const fontsReady = loaded || Boolean(error);
