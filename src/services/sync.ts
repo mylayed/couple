@@ -105,6 +105,28 @@ export type ListItem = SyncedBase & {
   created_by: string | null;
 };
 
+export type GameKind = 'guess' | 'pair';
+
+export type GameRound = SyncedBase & {
+  kind: GameKind;
+  question_ids: string[];
+  created_by: string | null;
+};
+
+// Вибір партнера сервер віддає лише після власного, тож до того його тут немає
+export type GameAnswer = SyncedBase & {
+  round_id: string;
+  user_id: string;
+  choices: number[];
+};
+
+export type Challenge = SyncedBase & {
+  challenge_id: string;
+  title: string;
+  done_at: string | null;
+  created_by: string | null;
+};
+
 export type SyncedTables = {
   important_dates: ImportantDate;
   moments: Moment;
@@ -117,12 +139,15 @@ export type SyncedTables = {
   bucket_items: BucketItem;
   lists: SharedList;
   list_items: ListItem;
+  game_rounds: GameRound;
+  game_answers: GameAnswer;
+  challenges: Challenge;
 };
 
 export type SyncedTable = keyof SyncedTables;
 
 // Порядок важливий: відмітки посилаються на дії, коментарі — на відповіді,
-// пункти — на списки, тому батьківські записи відправляються першими
+// пункти — на списки, вибір у грі — на раунд, тому батьківські записи відправляються першими
 const TABLES: SyncedTable[] = [
   'important_dates',
   'moments',
@@ -135,10 +160,13 @@ const TABLES: SyncedTable[] = [
   'bucket_items',
   'lists',
   'list_items',
+  'game_rounds',
+  'game_answers',
+  'challenges',
 ];
 
 // Таблиці, де власник записаний у user_id, а не в created_by
-const USER_OWNED: SyncedTable[] = ['daily_answers', 'moods'];
+const USER_OWNED: SyncedTable[] = ['daily_answers', 'moods', 'game_answers'];
 
 // Поля, які заповнює сервер або сам модуль синхронізації
 type ManagedField =
@@ -169,6 +197,9 @@ const emptyRows = (): SyncState['rows'] => ({
   bucket_items: {},
   lists: {},
   list_items: {},
+  game_rounds: {},
+  game_answers: {},
+  challenges: {},
 });
 
 export const useSync = create<SyncState>()(
@@ -372,6 +403,14 @@ export async function flush(): Promise<void> {
           .eq('couple_id', sent.couple_id)
           .eq('question_date', sent.question_date as string);
         if (answers) mergeFromServer('daily_answers', answers as AnyRow[]);
+      }
+      // Так само з вибором партнера в раунді гри
+      if (item.table === 'game_answers') {
+        const { data: answers } = await supabase
+          .from('game_answers')
+          .select('*')
+          .eq('round_id', sent.round_id as string);
+        if (answers) mergeFromServer('game_answers', answers as AnyRow[]);
       }
     }
     retryDelay = 1000;

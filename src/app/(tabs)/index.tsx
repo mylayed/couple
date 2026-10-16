@@ -4,6 +4,7 @@ import {
   CalendarHeartIcon,
   ChatCircleDotsIcon,
   EnvelopeSimpleIcon,
+  GameControllerIcon,
   PencilSimpleLineIcon,
 } from 'phosphor-react-native';
 import { Platform, View } from 'react-native';
@@ -17,11 +18,14 @@ import { momentGlyph } from '@/components/MomentIcon';
 import { Screen } from '@/components/Screen';
 import { TouchButton } from '@/components/TouchButton';
 import { Text } from '@/components/Text';
+import { TreeCard } from '@/components/TreeCard';
 import { useCalendar } from '@/services/calendar';
+import { GAMES, useRounds } from '@/services/games';
 import { useMomentSummaries } from '@/services/moments';
 import { moodMeta, useMyMood, usePartnerMood } from '@/services/moods';
 import { useNotes } from '@/services/notes';
 import { requestNotificationPermission } from '@/services/notifications';
+import { usePoints } from '@/services/points';
 import { useTodayQuestion } from '@/services/questions';
 import { sendTouch, TOUCH_PHRASES, TOUCHES, useLastTouches } from '@/services/touches';
 import { useAuth } from '@/store/auth';
@@ -223,6 +227,37 @@ function QuestionCard() {
   );
 }
 
+function GamesCard() {
+  const router = useRouter();
+  const { spacing } = useTheme();
+  const points = usePoints();
+  const partnerName = useCouple((s) => s.partner?.name ?? 'Партнер');
+  const yourTurn = useRounds().find((r) => r.status === 'yourTurn');
+
+  return (
+    <TreeCard points={points} compact>
+      {yourTurn ? (
+        <Text color="primary">
+          {partnerName} чекає на тебе: «{GAMES[yourTurn.round.kind].title}» 🎲
+        </Text>
+      ) : null}
+      <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+        <View style={{ flex: 1 }}>
+          <Button
+            title={yourTurn ? 'Грати' : 'Ігри'}
+            icon={GameControllerIcon}
+            variant={yourTurn ? 'primary' : 'secondary'}
+            onPress={() => router.push(yourTurn ? `/games/${yourTurn.round.id}` : '/games')}
+          />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Button title="Челенджі" variant="ghost" onPress={() => router.push('/challenges')} />
+        </View>
+      </View>
+    </TreeCard>
+  );
+}
+
 const UPCOMING_COUNT = 3;
 
 function UpcomingDates() {
@@ -323,6 +358,7 @@ export default function Home() {
       <TouchCard />
       <NotesCard />
       <QuestionCard />
+      <GamesCard />
       <MoodCard />
       <OverdueMoments />
       <UpcomingDates />
