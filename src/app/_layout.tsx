@@ -8,6 +8,7 @@ import { useEffect } from 'react';
 import { startCoupleListener } from '@/services/couple';
 import { startPhotoUploads } from '@/services/memories';
 import { startNotifications } from '@/services/notifications';
+import { startPurchases } from '@/services/plus';
 import { selectIsPaired, useCouple } from '@/store/couple';
 import { selectSignedIn, startAuthListener, useAuth } from '@/store/auth';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
@@ -72,6 +73,10 @@ function Shell() {
           <Stack.Screen name="capsule" options={{ ...detailHeader, title: 'Капсула часу' }} />
           <Stack.Screen name="year" options={{ ...detailHeader, title: 'Підсумок року' }} />
           <Stack.Screen name="ai" options={{ ...detailHeader, title: 'ШІ і ваші дані' }} />
+          <Stack.Screen
+            name="plus"
+            options={{ ...detailHeader, title: 'Plus', presentation: 'modal' }}
+          />
         </Stack.Protected>
       </Stack>
     </>
@@ -95,6 +100,7 @@ export default function RootLayout() {
     startNotifications();
     startWidgetUpdates();
     startPhotoUploads();
+    startPurchases();
   }, []);
 
   const fontsReady = loaded || Boolean(error);

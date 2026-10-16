@@ -21,6 +21,7 @@ import {
   removeMemoryPhoto,
   updateMemory,
   useMemoryComments,
+  useCanAddPhoto,
   usePendingPhoto,
 } from '@/services/memories';
 import { pickPhoto } from '@/services/photos';
@@ -48,6 +49,7 @@ export default function MemoryScreen() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const canAddPhoto = useCanAddPhoto();
 
   if (!memory) {
     return (
@@ -68,6 +70,11 @@ export default function MemoryScreen() {
   const author = memory.created_by === userId ? 'Ти' : partnerName;
 
   const changePhoto = async () => {
+    // Замінити фото можна завжди; нове понад безкоштовні — з Plus
+    if (!hasPhoto && !canAddPhoto) {
+      router.push({ pathname: '/plus', params: { from: 'photos' } });
+      return;
+    }
     const picked = await pickPhoto();
     if (!picked) return;
     setBusy(true);

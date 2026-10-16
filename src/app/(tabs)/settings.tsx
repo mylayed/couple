@@ -4,6 +4,7 @@ import {
   InfoIcon,
   LinkBreakIcon,
   SignOutIcon,
+  SparkleIcon,
   TrashIcon,
   XIcon,
 } from 'phosphor-react-native';
@@ -24,12 +25,23 @@ import { deleteAccount, signOut, updateAvatar, updateProfile } from '@/services/
 import { leaveCouple, setStartDate } from '@/services/couple';
 import { requestNotificationPermission } from '@/services/notifications';
 import { pickPhoto } from '@/services/photos';
+import {
+  isLifetime,
+  isPlusActive,
+  manageSubscription,
+  purchasesAvailable,
+  refreshPlusPayments,
+  restorePurchases,
+  useActivePayment,
+  usePlus,
+  usePlusPayments,
+} from '@/services/plus';
 import { useAuth, type Profile } from '@/store/auth';
 import { useCouple, type Couple, type Partner } from '@/store/couple';
 import { useNotificationPrefs } from '@/store/notifications';
 import { useTheme } from '@/theme/ThemeProvider';
 import { ThemeMode } from '@/theme/tokens';
-import { todayIso } from '@/utils/dates';
+import { formatDayMonth, todayIso } from '@/utils/dates';
 
 const MODES: { mode: ThemeMode; title: string }[] = [
   { mode: 'light', title: 'Світла' },
@@ -347,6 +359,79 @@ function AiCard() {
   );
 }
 
+function PlusCard() {
+  const router = useRouter();
+  const { spacing } = useTheme();
+  const plus = usePlus();
+  const until = useCouple((s) => s.couple?.plus_until ?? null);
+  const partnerName = useCouple((s) => s.partner?.name ?? 'Партнер');
+  const userId = useAuth((s) => s.session?.user.id);
+  const payment = useActivePayment();
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    void refreshPlusPayments();
+  }, []);
+
+  const restore = async () => {
+    setBusy(true);
+    setMessage(null);
+    const result = await restorePurchases();
+    setBusy(false);
+    setMessage(result.error ?? (result.cancelled ? null : 'Покупки відновлено.'));
+  };
+
+  const mine = payment?.user_id === userId;
+  const status = !plus
+    ? 'Безкоштовна версія. Усе основне — назавжди без оплати.'
+    : [
+        until && isLifetime(until)
+          ? 'Plus назавжди.'
+          : `Plus до ${formatDayMonth(new Date(until!), true)}.`,
+        payment ? (mine ? 'Оплачуєш ти.' : `Оплачує ${partnerName}.`) : null,
+      ]
+        .filter(Boolean)
+        .join(' ');
+
+  return (
+    <Card style={{ gap: spacing.md }}>
+      <Text variant="subtitle">Dotyk Plus</Text>
+      <Text color="textMuted">{status}</Text>
+      <Button
+        title={plus ? 'Що дає Plus' : 'Дізнатися про Plus'}
+        icon={SparkleIcon}
+        variant="secondary"
+        onPress={() => router.push({ pathname: '/plus', params: { from: 'settings' } })}
+      />
+      {mine && payment && !isLifetime(payment.expires_at) && purchasesAvailable ? (
+        <Button title="Керувати підпискою" variant="ghost" onPress={manageSubscription} />
+      ) : null}
+      {purchasesAvailable ? (
+        <Button
+          title={busy ? 'Відновлюємо…' : 'Відновити покупки'}
+          variant="ghost"
+          disabled={busy}
+          onPress={restore}
+        />
+      ) : null}
+      {message ? (
+        <Text variant="caption" color="textMuted">
+          {message}
+        </Text>
+      ) : null}
+    </Card>
+  );
+}
+
+// Видалення акаунта не скасовує підписку в магазині, про це треба сказати
+function useRenewingSubscription(): boolean {
+  const userId = useAuth((s) => s.session?.user.id);
+  return usePlusPayments((s) =>
+    s.items.some((p) => p.user_id === userId && p.will_renew && isPlusActive(p.expires_at)),
+  );
+}
+
 export default function Settings() {
   const { spacing, mode, setMode } = useTheme();
   const profile = useAuth((s) => s.profile);
@@ -356,6 +441,7 @@ export default function Settings() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [accountError, setAccountError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const renewing = useRenewingSubscription();
 
   const run = async (action: () => Promise<{ error: string | null }>) => {
     setBusy(true);
@@ -389,6 +475,8 @@ export default function Settings() {
 
       {Platform.OS !== 'web' ? <NotificationsCard /> : null}
 
+      {couple ? <PlusCard /> : null}
+
       {couple ? <AiCard /> : null}
 
       <Card style={{ gap: spacing.md }}>
@@ -404,6 +492,12 @@ export default function Settings() {
         {confirmDelete ? (
           <View style={{ gap: spacing.sm }}>
             <Text>Акаунт і всі твої дані буде видалено назавжди. Відновити їх не вийде.</Text>
+            {renewing ? (
+              <Text color="primary">
+                Підписка Plus сама не скасується: спершу скасуй її в налаштуваннях{' '}
+                {Platform.OS === 'ios' ? 'App Store' : 'Google Play'}.
+              </Text>
+            ) : null}
             <Button
               title={busy ? 'Видаляємо…' : 'Так, видалити назавжди'}
               icon={TrashIcon}

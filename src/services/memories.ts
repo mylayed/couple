@@ -6,6 +6,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { compressPhoto, removePhotos, uploadPhoto, type Photo } from './photos';
+import { FREE_PHOTOS, usePlus } from './plus';
 import { StorageKeys, zustandStorage } from './storage';
 import { deleteRow, saveRow, useRows, useSync, type Memory, type MemoryComment } from './sync';
 
@@ -68,6 +69,19 @@ export function useMemoryComments(memoryId: string): MemoryComment[] {
         .sort((a, b) => a.created_at.localeCompare(b.created_at)),
     [comments, memoryId],
   );
+}
+
+// Безкоштовно FREE_PHOTOS спогадів із фото, з Plus — без меж. Заміна фото в спогаді,
+// де воно вже є, ліміт не зачіпає. Після завершення Plus усі фото лишаються.
+export function useCanAddPhoto(): boolean {
+  const plus = usePlus();
+  const memories = useRows('memories');
+  const pending = usePendingPhotos((s) => s.items);
+  return useMemo(() => {
+    if (plus) return true;
+    const withPhoto = memories.filter((m) => m.photo_path || pending[m.id]).length;
+    return withPhoto < FREE_PHOTOS;
+  }, [plus, memories, pending]);
 }
 
 // ─── Запис ───────────────────────────────────────────────────────────────────

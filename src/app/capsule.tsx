@@ -1,4 +1,5 @@
 import { EnvelopeOpenIcon, EnvelopeSimpleIcon, LockSimpleIcon } from 'phosphor-react-native';
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
@@ -19,6 +20,7 @@ import {
   useCapsuleList,
   type Capsule,
 } from '@/services/capsules';
+import { usePlus } from '@/services/plus';
 import { useAuth } from '@/store/auth';
 import { useCouple } from '@/store/couple';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -34,7 +36,9 @@ function useAuthorName() {
 }
 
 function SealForm() {
+  const router = useRouter();
   const { spacing } = useTheme();
+  const plus = usePlus();
   const [message, setMessage] = useState('');
   const [months, setMonths] = useState<number | null>(DEFAULT_MONTHS);
   const [opensOn, setOpensOn] = useState<string | null>(opensAfterMonths(DEFAULT_MONTHS));
@@ -63,6 +67,12 @@ function SealForm() {
         Напишіть, якими ви є зараз, про що мрієте й чого чекаєте. Лист відкриється в обраний день
         для вас обох.
       </Text>
+      {plus ? null : (
+        <Text variant="caption" color="textMuted">
+          Запечатати нову капсулу можна з Plus. Уже запечатані відкриються у свій день у будь-якому
+          разі.
+        </Text>
+      )}
       <TextField
         placeholder="Привіт, ми з майбутнього…"
         value={message}
@@ -118,7 +128,11 @@ function SealForm() {
           title="Запечатати"
           icon={LockSimpleIcon}
           disabled={!message.trim() || !opensOn}
-          onPress={() => setConfirm(true)}
+          onPress={() =>
+            plus
+              ? setConfirm(true)
+              : router.push({ pathname: '/plus', params: { from: 'capsule' } })
+          }
         />
       )}
     </Card>

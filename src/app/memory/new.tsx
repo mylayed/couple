@@ -8,7 +8,7 @@ import { PhotoSlot } from '@/components/PhotoSlot';
 import { Screen } from '@/components/Screen';
 import { Text } from '@/components/Text';
 import { TextField } from '@/components/TextField';
-import { createMemory, MAX_CAPTION } from '@/services/memories';
+import { createMemory, MAX_CAPTION, useCanAddPhoto } from '@/services/memories';
 import { pickPhoto, type Photo } from '@/services/photos';
 import { todayIso } from '@/utils/dates';
 import { haptics } from '@/utils/haptics';
@@ -20,8 +20,14 @@ export default function NewMemory() {
   const [caption, setCaption] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const canAddPhoto = useCanAddPhoto();
 
   const choose = async () => {
+    // Безкоштовні фото закінчились: пропонуємо Plus замість галереї
+    if (!photo && !canAddPhoto) {
+      router.push({ pathname: '/plus', params: { from: 'photos' } });
+      return;
+    }
     const picked = await pickPhoto();
     if (picked) {
       setPhoto(picked);
