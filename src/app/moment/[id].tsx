@@ -5,13 +5,13 @@ import { Pressable, View } from 'react-native';
 
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import { DateField } from '@/components/DateField';
 import { EmptyState } from '@/components/EmptyState';
 import { Icon } from '@/components/Icon';
 import { MomentForm } from '@/components/MomentForm';
 import { momentGlyph } from '@/components/MomentIcon';
 import { Screen } from '@/components/Screen';
 import { Text } from '@/components/Text';
-import { TextField } from '@/components/TextField';
 import {
   deleteMoment,
   deleteMomentLog,
@@ -25,13 +25,13 @@ import {
 import { useAuth } from '@/store/auth';
 import { useCouple } from '@/store/couple';
 import { useTheme } from '@/theme/ThemeProvider';
-import { formatDayMonth, formatDaysAgo, parseIsoDate, parseUkDate, todayIso } from '@/utils/dates';
+import { formatDayMonth, formatDaysAgo, parseIsoDate, todayIso } from '@/utils/dates';
 
 // Відмітка за інший день: коли забули відмітити вчасно
 function LogPastDate({ momentId }: { momentId: string }) {
   const { spacing } = useTheme();
   const [open, setOpen] = useState(false);
-  const [date, setDate] = useState('');
+  const [date, setDate] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   if (!open) {
@@ -39,26 +39,23 @@ function LogPastDate({ momentId }: { momentId: string }) {
   }
 
   const save = () => {
-    const iso = parseUkDate(date);
-    if (!iso) return setError('Дата має бути у форматі ДД.ММ.РРРР і не в майбутньому.');
-    logMoment(momentId, iso);
+    if (!date) return setError('Обери день.');
+    logMoment(momentId, date);
     setOpen(false);
-    setDate('');
+    setDate(null);
   };
 
   return (
     <View style={{ gap: spacing.sm }}>
-      <TextField
+      <DateField
         label="Коли це було"
-        placeholder="ДД.ММ.РРРР"
         value={date}
-        onChangeText={(text) => {
-          setDate(text.replace(/[^\d.]/g, '').slice(0, 10));
+        onChange={(iso) => {
+          setDate(iso);
           setError(null);
         }}
-        keyboardType="numbers-and-punctuation"
+        maxDate={todayIso()}
         error={error}
-        autoFocus
       />
       <Button title="Відмітити" variant="secondary" onPress={save} />
       <Button title="Скасувати" variant="ghost" onPress={() => setOpen(false)} />

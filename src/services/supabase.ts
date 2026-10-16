@@ -20,7 +20,7 @@ const ENCRYPTION_KEY_NAME = 'dotyk-auth-key';
 // Тому сесія лежить у зашифрованому MMKV, а випадковий ключ шифрування — у SecureStore.
 // У вебі SecureStore немає; веб у нас лише для перевірки під час розробки.
 function readEncryptionKey(): string | undefined {
-  // У вебі SecureStore немає, а в Expo Go сесія все одно лише в пам'яті
+  // У вебі SecureStore немає, а в Expo Go сесія лежить у незашифрованому сховищі для розробки
   if (Platform.OS === 'web' || isExpoGo) return undefined;
   const options = { keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK };
   let key = SecureStore.getItem(ENCRYPTION_KEY_NAME, options);

@@ -2,8 +2,8 @@ import Constants, { ExecutionEnvironment } from 'expo-constants';
 import type { Configuration } from 'react-native-mmkv';
 import type { StateStorage } from 'zustand/middleware';
 
-// Expo Go не містить нативного MMKV. Там дані живуть лише в пам'яті до перезапуску:
-// цього вистачає, щоб переглянути інтерфейс без dev-build.
+// Expo Go не містить нативного MMKV. Там дані лежать у key-value сховищі expo-sqlite
+// (воно є в Expo Go), тож вхід і налаштування переживають перезапуск.
 export const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
 
 export type KeyValueStorage = {
@@ -12,21 +12,24 @@ export type KeyValueStorage = {
   remove: (key: string) => void;
 };
 
-function createMemoryStorage(): KeyValueStorage {
-  const values = new Map<string, string>();
+// Синхронні методи kv-store дають той самий інтерфейс, що й MMKV.
+// Шифрування тут немає, але це лише для розробки в Expo Go.
+function createExpoGoStorage(id: string): KeyValueStorage {
+  // Підключаємо лише в Expo Go, щоб не тягнути SQLite у збірку без потреби
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { default: kv } = require('expo-sqlite/kv-store') as typeof import('expo-sqlite/kv-store');
+  const prefixed = (key: string) => `${id}:${key}`;
   return {
-    getString: (key) => values.get(key),
-    set: (key, value) => {
-      values.set(key, value);
-    },
+    getString: (key) => kv.getItemSync(prefixed(key)) ?? undefined,
+    set: (key, value) => kv.setItemSync(prefixed(key), value),
     remove: (key) => {
-      values.delete(key);
+      kv.removeItemSync(prefixed(key));
     },
   };
 }
 
 export function createStorage(configuration: Configuration): KeyValueStorage {
-  if (isExpoGo) return createMemoryStorage();
+  if (isExpoGo) return createExpoGoStorage(configuration.id ?? 'default');
   // Підключаємо лише поза Expo Go: там модуль падає ще під час імпорту
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { createMMKV } = require('react-native-mmkv') as typeof import('react-native-mmkv');

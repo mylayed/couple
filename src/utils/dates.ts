@@ -23,28 +23,6 @@ export function pluralUk(n: number, forms: [one: string, few: string, many: stri
   return forms[2];
 }
 
-// Дата народження вводиться як ДД.ММ.РРРР, а в базі зберігається як YYYY-MM-DD
-export function parseUkDate(raw: string, { allowFuture = false } = {}): string | null {
-  const match = /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/.exec(raw.trim());
-  if (!match) return null;
-  const [, d, m, y] = match.map(Number);
-  const date = new Date(Date.UTC(y, m - 1, d));
-  const valid =
-    date.getUTCFullYear() === y &&
-    date.getUTCMonth() === m - 1 &&
-    date.getUTCDate() === d &&
-    y > 1900 &&
-    (allowFuture ? y < 2200 : date.getTime() <= Date.now());
-  if (!valid) return null;
-  return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-}
-
-export function formatUkDate(iso: string | null): string {
-  if (!iso) return '';
-  const [y, m, d] = iso.split('-');
-  return `${d}.${m}.${y}`;
-}
-
 // Календарна дата в локальному часі як YYYY-MM-DD
 export function toIsoDate(date: Date): string {
   const m = String(date.getMonth() + 1).padStart(2, '0');

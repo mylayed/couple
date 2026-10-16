@@ -5,6 +5,7 @@ import { Platform, StyleSheet, View } from 'react-native';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Chip } from '@/components/Chip';
+import { DateField } from '@/components/DateField';
 import { Screen } from '@/components/Screen';
 import { Text } from '@/components/Text';
 import { TextField } from '@/components/TextField';
@@ -17,7 +18,7 @@ import { useCouple, type Couple, type Partner } from '@/store/couple';
 import { useNotificationPrefs } from '@/store/notifications';
 import { useTheme } from '@/theme/ThemeProvider';
 import { ThemeMode } from '@/theme/tokens';
-import { formatUkDate, parseUkDate } from '@/utils/dates';
+import { todayIso } from '@/utils/dates';
 
 const MODES: { mode: ThemeMode; title: string }[] = [
   { mode: 'light', title: 'Світла' },
@@ -29,7 +30,7 @@ const MODES: { mode: ThemeMode; title: string }[] = [
 function ProfileCard({ profile }: { profile: Profile }) {
   const { spacing } = useTheme();
   const [name, setName] = useState(profile.name);
-  const [birthDate, setBirthDate] = useState(formatUkDate(profile.birth_date));
+  const [birthDate, setBirthDate] = useState(profile.birth_date);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -37,17 +38,15 @@ function ProfileCard({ profile }: { profile: Profile }) {
   const save = async () => {
     const trimmed = name.trim();
     if (!trimmed) return setError("Ім'я не може бути порожнім.");
-    const iso = birthDate.trim() ? parseUkDate(birthDate) : null;
-    if (birthDate.trim() && !iso) return setError('Дата має бути у форматі ДД.ММ.РРРР.');
     setBusy(true);
     setError(null);
-    const result = await updateProfile({ name: trimmed, birth_date: iso });
+    const result = await updateProfile({ name: trimmed, birth_date: birthDate });
     setBusy(false);
     if (result.error) setError(result.error);
     else setSaved(true);
   };
 
-  const dirty = name.trim() !== profile.name || birthDate !== formatUkDate(profile.birth_date);
+  const dirty = name.trim() !== profile.name || birthDate !== profile.birth_date;
 
   return (
     <Card style={{ gap: spacing.md }}>
@@ -62,17 +61,21 @@ function ProfileCard({ profile }: { profile: Profile }) {
         autoCapitalize="words"
         maxLength={40}
       />
-      <TextField
+      <DateField
         label="Дата народження"
-        placeholder="ДД.ММ.РРРР"
         value={birthDate}
-        onChangeText={(text) => {
-          setBirthDate(text.replace(/[^\d.]/g, '').slice(0, 10));
+        onChange={(iso) => {
+          setBirthDate(iso);
           setSaved(false);
         }}
-        keyboardType="numbers-and-punctuation"
-        error={error}
+        maxDate={todayIso()}
+        clearable
       />
+      {error ? (
+        <Text variant="caption" color="primary">
+          {error}
+        </Text>
+      ) : null}
       {saved && !dirty ? <Text color="textMuted">Збережено</Text> : null}
       <Button
         title={busy ? 'Зберігаємо…' : 'Зберегти'}
@@ -86,18 +89,16 @@ function ProfileCard({ profile }: { profile: Profile }) {
 
 function CoupleCard({ couple, partner }: { couple: Couple; partner: Partner | null }) {
   const { spacing } = useTheme();
-  const [startDate, setStartDateText] = useState(formatUkDate(couple.started_on));
+  const [startDate, setStartDateText] = useState(couple.started_on);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
   const [confirmLeave, setConfirmLeave] = useState(false);
 
   const save = async () => {
-    const iso = startDate.trim() ? parseUkDate(startDate) : null;
-    if (startDate.trim() && !iso) return setError('Дата має бути у форматі ДД.ММ.РРРР.');
     setBusy(true);
     setError(null);
-    const result = await setStartDate(iso);
+    const result = await setStartDate(startDate);
     setBusy(false);
     if (result.error) setError(result.error);
     else setSaved(true);
@@ -112,21 +113,21 @@ function CoupleCard({ couple, partner }: { couple: Couple; partner: Partner | nu
     if (result.error) setError(result.error);
   };
 
-  const dirty = startDate !== formatUkDate(couple.started_on);
+  const dirty = startDate !== couple.started_on;
 
   return (
     <Card style={{ gap: spacing.md }}>
       <Text variant="subtitle">Пара</Text>
       {partner ? <Text color="textMuted">Твоя пара: {partner.name}</Text> : null}
-      <TextField
+      <DateField
         label="Дата початку стосунків"
-        placeholder="ДД.ММ.РРРР"
         value={startDate}
-        onChangeText={(text) => {
-          setStartDateText(text.replace(/[^\d.]/g, '').slice(0, 10));
+        onChange={(iso) => {
+          setStartDateText(iso);
           setSaved(false);
         }}
-        keyboardType="numbers-and-punctuation"
+        maxDate={todayIso()}
+        clearable
         error={error}
       />
       {saved && !dirty ? <Text color="textMuted">Збережено</Text> : null}

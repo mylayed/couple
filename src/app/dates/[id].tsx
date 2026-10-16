@@ -5,6 +5,7 @@ import { View } from 'react-native';
 
 import { Button } from '@/components/Button';
 import { Chip } from '@/components/Chip';
+import { DateField } from '@/components/DateField';
 import { DATE_KIND_ICONS } from '@/components/DateKindIcon';
 import { Screen } from '@/components/Screen';
 import { Text } from '@/components/Text';
@@ -18,7 +19,6 @@ import {
 } from '@/services/calendar';
 import { useRow } from '@/services/sync';
 import { useTheme } from '@/theme/ThemeProvider';
-import { formatUkDate, parseUkDate } from '@/utils/dates';
 
 // Один екран і для нової дати (/dates/new), і для зміни наявної
 export default function EditDate() {
@@ -29,7 +29,7 @@ export default function EditDate() {
   const existing = useRow('important_dates', isNew ? '' : id);
 
   const [title, setTitle] = useState(existing?.title ?? '');
-  const [date, setDate] = useState(formatUkDate(existing?.date ?? null));
+  const [date, setDate] = useState<string | null>(existing?.date ?? null);
   const [kind, setKind] = useState<DateKind>(existing?.kind ?? 'anniversary');
   const [repeatsYearly, setRepeatsYearly] = useState(existing?.repeats_yearly ?? true);
   const [error, setError] = useState<string | null>(null);
@@ -46,10 +46,8 @@ export default function EditDate() {
 
   const save = () => {
     if (!title.trim()) return setError('Назви дату.');
-    // Майбутні дати теж можна: наприклад, запланована подорож
-    const iso = parseUkDate(date, { allowFuture: true });
-    if (!iso) return setError('Дата має бути у форматі ДД.ММ.РРРР.');
-    saveImportantDate({ title, date: iso, kind, repeatsYearly }, isNew ? undefined : id);
+    if (!date) return setError('Обери дату.');
+    saveImportantDate({ title, date, kind, repeatsYearly }, isNew ? undefined : id);
     router.back();
   };
 
@@ -68,15 +66,14 @@ export default function EditDate() {
         maxLength={80}
         autoFocus={isNew}
       />
-      <TextField
+      {/* Майбутні дати теж можна: наприклад, запланована подорож */}
+      <DateField
         label="Дата"
-        placeholder="ДД.ММ.РРРР"
         value={date}
-        onChangeText={(text) => {
-          setDate(text.replace(/[^\d.]/g, '').slice(0, 10));
+        onChange={(iso) => {
+          setDate(iso);
           setError(null);
         }}
-        keyboardType="numbers-and-punctuation"
         error={error}
       />
 
