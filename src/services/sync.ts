@@ -83,6 +83,28 @@ export type AnswerComment = SyncedBase & {
   created_by: string | null;
 };
 
+export type BucketItem = SyncedBase & {
+  title: string;
+  note: string | null;
+  done_at: string | null;
+  created_by: string | null;
+};
+
+export type ListKind = 'movies' | 'restaurants' | 'gifts' | 'shopping' | 'other';
+
+export type SharedList = SyncedBase & {
+  title: string;
+  kind: ListKind;
+  created_by: string | null;
+};
+
+export type ListItem = SyncedBase & {
+  list_id: string;
+  title: string;
+  done_at: string | null;
+  created_by: string | null;
+};
+
 export type SyncedTables = {
   important_dates: ImportantDate;
   moments: Moment;
@@ -92,12 +114,15 @@ export type SyncedTables = {
   notes: Note;
   touches: Touch;
   moods: Mood;
+  bucket_items: BucketItem;
+  lists: SharedList;
+  list_items: ListItem;
 };
 
 export type SyncedTable = keyof SyncedTables;
 
 // Порядок важливий: відмітки посилаються на дії, коментарі — на відповіді,
-// тому батьківські записи відправляються першими
+// пункти — на списки, тому батьківські записи відправляються першими
 const TABLES: SyncedTable[] = [
   'important_dates',
   'moments',
@@ -107,6 +132,9 @@ const TABLES: SyncedTable[] = [
   'notes',
   'touches',
   'moods',
+  'bucket_items',
+  'lists',
+  'list_items',
 ];
 
 // Таблиці, де власник записаний у user_id, а не в created_by
@@ -138,6 +166,9 @@ const emptyRows = (): SyncState['rows'] => ({
   notes: {},
   touches: {},
   moods: {},
+  bucket_items: {},
+  lists: {},
+  list_items: {},
 });
 
 export const useSync = create<SyncState>()(

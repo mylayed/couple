@@ -56,6 +56,12 @@ function Shell() {
           <Stack.Screen name="notes/new" options={{ ...detailHeader, title: 'Нова листівка' }} />
           <Stack.Screen name="notes/[id]" options={detailHeader} />
           <Stack.Screen name="mood" options={{ ...detailHeader, title: 'Настрій дня' }} />
+          <Stack.Screen name="bucket/index" options={{ ...detailHeader, title: 'Бакет-ліст' }} />
+          <Stack.Screen name="bucket/[id]" options={detailHeader} />
+          <Stack.Screen name="lists/new" options={{ ...detailHeader, title: 'Новий список' }} />
+          <Stack.Screen name="lists/[id]" options={detailHeader} />
+          <Stack.Screen name="idea" options={{ ...detailHeader, title: 'Ідея побачення' }} />
+          <Stack.Screen name="roulette" options={{ ...detailHeader, title: 'Рулетка рішень' }} />
         </Stack.Protected>
       </Stack>
     </>
