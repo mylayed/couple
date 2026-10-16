@@ -6,9 +6,11 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 
 import { startCoupleListener } from '@/services/couple';
+import { startNotifications } from '@/services/notifications';
 import { selectIsPaired, useCouple } from '@/store/couple';
 import { selectSignedIn, startAuthListener, useAuth } from '@/store/auth';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
+import { fonts } from '@/theme/tokens';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -18,6 +20,15 @@ function Shell() {
   const signedIn = useAuth(selectSignedIn);
   const hasPartner = useCouple(selectIsPaired);
   const isPaired = signedIn && hasPartner;
+
+  const detailHeader = {
+    headerShown: true,
+    headerShadowVisible: false,
+    headerBackButtonDisplayMode: 'minimal' as const,
+    headerStyle: { backgroundColor: colors.background },
+    headerTintColor: colors.primary,
+    headerTitleStyle: { fontFamily: fonts.headingMedium, color: colors.text },
+  };
 
   return (
     <>
@@ -34,6 +45,12 @@ function Shell() {
         </Stack.Protected>
         <Stack.Protected guard={isPaired} redirectTo={signedIn ? '/pair' : '/welcome'}>
           <Stack.Screen name="(tabs)" />
+          {/* Екрани поверх вкладок мають заголовок і кнопку «Назад»; назву для [id] задає сам екран */}
+          <Stack.Screen name="question" options={{ ...detailHeader, title: 'Питання дня' }} />
+          <Stack.Screen name="dates/index" options={{ ...detailHeader, title: 'Важливі дати' }} />
+          <Stack.Screen name="dates/[id]" options={detailHeader} />
+          <Stack.Screen name="moment/new" options={{ ...detailHeader, title: 'Новий момент' }} />
+          <Stack.Screen name="moment/[id]" options={detailHeader} />
         </Stack.Protected>
       </Stack>
     </>
@@ -54,6 +71,7 @@ export default function RootLayout() {
   useEffect(() => {
     startAuthListener();
     startCoupleListener();
+    startNotifications();
   }, []);
 
   const fontsReady = loaded || Boolean(error);

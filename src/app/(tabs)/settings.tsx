@@ -1,16 +1,20 @@
 import { LinkBreakIcon, SignOutIcon, TrashIcon } from 'phosphor-react-native';
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import { Chip } from '@/components/Chip';
 import { Screen } from '@/components/Screen';
 import { Text } from '@/components/Text';
 import { TextField } from '@/components/TextField';
+import { ToggleRow } from '@/components/ToggleRow';
 import { deleteAccount, signOut, updateProfile } from '@/services/auth';
 import { leaveCouple, setStartDate } from '@/services/couple';
+import { requestNotificationPermission } from '@/services/notifications';
 import { useAuth, type Profile } from '@/store/auth';
 import { useCouple, type Couple, type Partner } from '@/store/couple';
+import { useNotificationPrefs } from '@/store/notifications';
 import { useTheme } from '@/theme/ThemeProvider';
 import { ThemeMode } from '@/theme/tokens';
 import { formatUkDate, parseUkDate } from '@/utils/dates';
@@ -113,7 +117,7 @@ function CoupleCard({ couple, partner }: { couple: Couple; partner: Partner | nu
   return (
     <Card style={{ gap: spacing.md }}>
       <Text variant="subtitle">Пара</Text>
-      {partner ? <Text color="textMuted">Ти в парі з {partner.name}</Text> : null}
+      {partner ? <Text color="textMuted">Твоя пара: {partner.name}</Text> : null}
       <TextField
         label="Дата початку стосунків"
         placeholder="ДД.ММ.РРРР"
@@ -157,6 +161,75 @@ function CoupleCard({ couple, partner }: { couple: Couple; partner: Partner | nu
   );
 }
 
+const QUESTION_HOURS = [9, 13, 18, 20, 22];
+
+function NotificationsCard() {
+  const { spacing } = useTheme();
+  const prefs = useNotificationPrefs();
+  const [denied, setDenied] = useState(false);
+  const set = (changes: Partial<typeof prefs>) => useNotificationPrefs.setState(changes);
+
+  const toggleEnabled = async (enabled: boolean) => {
+    if (!enabled) return set({ enabled: false, asked: true });
+    const granted = await requestNotificationPermission();
+    setDenied(!granted);
+    set({ enabled: granted, asked: true });
+  };
+
+  return (
+    <Card style={{ gap: spacing.md }}>
+      <Text variant="subtitle">Сповіщення</Text>
+      <ToggleRow title="Увімкнути сповіщення" value={prefs.enabled} onValueChange={toggleEnabled} />
+      {denied ? (
+        <Text variant="caption" color="primary">
+          Сповіщення заборонені в системних налаштуваннях телефона. Дозволь їх для Dotyk і спробуй
+          ще раз.
+        </Text>
+      ) : null}
+      <ToggleRow
+        title="Питання дня"
+        description="Нагадати, якщо ти ще не відповідаєш"
+        value={prefs.questionReminder}
+        onValueChange={(questionReminder) => set({ questionReminder })}
+        disabled={!prefs.enabled}
+      />
+      {prefs.enabled && prefs.questionReminder ? (
+        <View style={[styles.row, { gap: spacing.sm }]}>
+          {QUESTION_HOURS.map((hour) => (
+            <Chip
+              key={hour}
+              label={`${hour}:00`}
+              selected={prefs.questionHour === hour}
+              onPress={() => set({ questionHour: hour })}
+            />
+          ))}
+        </View>
+      ) : null}
+      <ToggleRow
+        title="Коли ми востаннє…"
+        description="Коли щось давно не відмічали"
+        value={prefs.momentReminders}
+        onValueChange={(momentReminders) => set({ momentReminders })}
+        disabled={!prefs.enabled}
+      />
+      <ToggleRow
+        title="Важливі дати"
+        description="Напередодні й у сам день"
+        value={prefs.dateReminders}
+        onValueChange={(dateReminders) => set({ dateReminders })}
+        disabled={!prefs.enabled}
+      />
+      <ToggleRow
+        title="Дії партнера"
+        description="Нова відповідь, відмітка чи дата"
+        value={prefs.partnerActivity}
+        onValueChange={(partnerActivity) => set({ partnerActivity })}
+        disabled={!prefs.enabled}
+      />
+    </Card>
+  );
+}
+
 export default function Settings() {
   const { spacing, mode, setMode } = useTheme();
   const profile = useAuth((s) => s.profile);
@@ -196,6 +269,8 @@ export default function Settings() {
       </Card>
 
       {couple ? <CoupleCard key={couple.id} couple={couple} partner={partner} /> : null}
+
+      {Platform.OS !== 'web' ? <NotificationsCard /> : null}
 
       <Card style={{ gap: spacing.md }}>
         <Text variant="subtitle">Акаунт</Text>

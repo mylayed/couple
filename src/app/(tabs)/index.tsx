@@ -1,22 +1,192 @@
-import { View } from 'react-native';
+import { useRouter } from 'expo-router';
+import { BellIcon, CalendarHeartIcon, ChatCircleDotsIcon } from 'phosphor-react-native';
+import { Platform, View } from 'react-native';
 
+import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Counter } from '@/components/Counter';
+import { Icon } from '@/components/Icon';
+import { ListItem } from '@/components/ListItem';
+import { momentGlyph } from '@/components/MomentIcon';
 import { Screen } from '@/components/Screen';
 import { Text } from '@/components/Text';
+import { useCalendar } from '@/services/calendar';
+import { useMomentSummaries } from '@/services/moments';
+import { requestNotificationPermission } from '@/services/notifications';
+import { useTodayQuestion } from '@/services/questions';
 import { useAuth } from '@/store/auth';
 import { useCouple } from '@/store/couple';
+import { useNotificationPrefs } from '@/store/notifications';
 import { useTheme } from '@/theme/ThemeProvider';
-import { daysBetween, parseIsoDate, pluralUk } from '@/utils/dates';
+import {
+  daysBetween,
+  durationParts,
+  formatDayMonth,
+  formatDaysAgo,
+  formatDaysLeft,
+  formatDuration,
+  formatOrdinal,
+  nextOccurrence,
+  parseIsoDate,
+  pluralUk,
+} from '@/utils/dates';
 
-// Заглушка головної. Справжній лічильник від дати початку стосунків — Етап 5.
+function TogetherCounter() {
+  const router = useRouter();
+  const { spacing } = useTheme();
+  const startedOn = useCouple((s) => s.couple?.started_on ?? null);
+  const pairedAt = useCouple((s) => s.pairedAt);
+  // Поки дату початку не задано, рахуємо від з'єднання в Dotyk
+  const since = startedOn ?? pairedAt;
+  const from = since ? parseIsoDate(since) : new Date();
+  const days = daysBetween(from);
+
+  let caption = formatDuration(durationParts(from));
+  if (startedOn) {
+    const next = nextOccurrence(startedOn);
+    const left = daysBetween(new Date(), next);
+    const years = next.getFullYear() - from.getFullYear();
+    if (years > 0) caption += ` · ${formatOrdinal(years)} річниця ${formatDaysLeft(left)}`;
+  }
+
+  return (
+    <View style={{ gap: spacing.sm }}>
+      <Counter
+        value={days}
+        label={`${pluralUk(days, ['день', 'дні', 'днів'])} разом`}
+        caption={caption}
+      />
+      {!startedOn ? (
+        <Button
+          title="Вказати дату початку стосунків"
+          variant="ghost"
+          onPress={() => router.push('/settings')}
+        />
+      ) : null}
+    </View>
+  );
+}
+
+function QuestionCard() {
+  const router = useRouter();
+  const { spacing } = useTheme();
+  const day = useTodayQuestion();
+  const partnerName = useCouple((s) => s.partner?.name ?? 'Партнер');
+
+  const status = !day.mine
+    ? 'Відповідай, щоб побачити відповідь партнера'
+    : day.partner
+      ? `${partnerName} теж відповідає. Подивись!`
+      : `Чекаємо на відповідь: ${partnerName}`;
+
+  return (
+    <Card style={{ gap: spacing.md }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+        <Icon icon={ChatCircleDotsIcon} color="secondary" weight="duotone" />
+        <Text variant="caption" color="textMuted">
+          Питання дня
+        </Text>
+      </View>
+      <Text variant="subtitle">{day.question.text}</Text>
+      <Text variant="caption" color={day.mine ? 'textMuted' : 'primary'}>
+        {status}
+      </Text>
+      <Button
+        title={day.mine ? 'Відкрити' : 'Відповісти'}
+        variant={day.mine ? 'secondary' : 'primary'}
+        onPress={() => router.push('/question')}
+      />
+    </Card>
+  );
+}
+
+const UPCOMING_COUNT = 3;
+
+function UpcomingDates() {
+  const router = useRouter();
+  const { spacing } = useTheme();
+  const upcoming = useCalendar()
+    .filter((e) => e.next)
+    .slice(0, UPCOMING_COUNT);
+
+  return (
+    <Card style={{ gap: spacing.md }}>
+      <Text variant="subtitle">Найближчі дати</Text>
+      {upcoming.length === 0 ? (
+        <Text color="textMuted">Додайте річниці, дні народження й інші важливі для вас дні.</Text>
+      ) : (
+        upcoming.map((e) => (
+          <ListItem
+            key={e.key}
+            icon={CalendarHeartIcon}
+            title={e.title}
+            subtitle={`${formatDayMonth(e.next!)} · ${formatDaysLeft(e.daysLeft!)}`}
+            accent={e.daysLeft! <= 7}
+          />
+        ))
+      )}
+      <Button title="Усі дати" variant="secondary" onPress={() => router.push('/dates')} />
+    </Card>
+  );
+}
+
+function OverdueMoments() {
+  const router = useRouter();
+  const { spacing } = useTheme();
+  const overdue = useMomentSummaries().filter((m) => m.overdue);
+  if (overdue.length === 0) return null;
+
+  return (
+    <Card style={{ gap: spacing.md }}>
+      <Text variant="subtitle">Давно не було</Text>
+      {overdue.slice(0, 3).map((m) => (
+        <ListItem
+          key={m.id}
+          icon={momentGlyph(m.icon)}
+          title={m.title}
+          subtitle={`Востаннє ${formatDaysAgo(m.daysSince ?? 0)}`}
+          accent
+          onPress={() => router.push(`/moment/${m.id}`)}
+        />
+      ))}
+    </Card>
+  );
+}
+
+function NotificationsPrompt() {
+  const { spacing } = useTheme();
+  const asked = useNotificationPrefs((s) => s.asked);
+  if (asked || Platform.OS === 'web') return null;
+
+  const enable = async () => {
+    const granted = await requestNotificationPermission();
+    useNotificationPrefs.setState({ asked: true, enabled: granted });
+  };
+
+  return (
+    <Card style={{ gap: spacing.md }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+        <Icon icon={BellIcon} color="primary" weight="duotone" />
+        <Text variant="subtitle">Нагадування</Text>
+      </View>
+      <Text color="textMuted">
+        Нагадаємо про питання дня, річниці й про те, що давно не було побачення. Налаштувати можна
+        будь-коли в профілі.
+      </Text>
+      <Button title="Увімкнути" onPress={enable} />
+      <Button
+        title="Не зараз"
+        variant="ghost"
+        onPress={() => useNotificationPrefs.setState({ asked: true })}
+      />
+    </Card>
+  );
+}
+
 export default function Home() {
   const { spacing } = useTheme();
   const name = useAuth((s) => s.profile?.name);
   const partnerName = useCouple((s) => s.partner?.name);
-  // Поки дату початку не задано, рахуємо від з'єднання в Dotyk
-  const since = useCouple((s) => s.couple?.started_on ?? s.pairedAt);
-  const days = since ? daysBetween(parseIsoDate(since)) : 0;
 
   return (
     <Screen>
@@ -25,14 +195,11 @@ export default function Home() {
         <Text variant="title">{partnerName ? `Ти і ${partnerName}` : 'Ви разом у Dotyk'}</Text>
       </View>
 
-      <Counter value={days} label={`${pluralUk(days, ['день', 'дні', 'днів'])} разом`} />
-
-      <Card style={{ gap: spacing.sm }}>
-        <Text variant="subtitle">Скоро тут</Text>
-        <Text color="textMuted">
-          Лічильник від дати, коли ви познайомились, найближча річниця і питання дня.
-        </Text>
-      </Card>
+      <TogetherCounter />
+      <NotificationsPrompt />
+      <QuestionCard />
+      <OverdueMoments />
+      <UpcomingDates />
     </Screen>
   );
 }

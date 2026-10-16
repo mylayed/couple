@@ -10,6 +10,7 @@ import {
 import type { ColorValue } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useNotificationNavigation } from '@/services/notifications';
 import { fonts } from '@/theme/tokens';
 import { useTheme } from '@/theme/ThemeProvider';
 
@@ -36,6 +37,7 @@ function tabIcon(Glyph: PhosphorIcon) {
 export default function TabsLayout() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  useNotificationNavigation();
 
   return (
     <Tabs

@@ -24,7 +24,7 @@ export function pluralUk(n: number, forms: [one: string, few: string, many: stri
 }
 
 // Дата народження вводиться як ДД.ММ.РРРР, а в базі зберігається як YYYY-MM-DD
-export function parseUkDate(raw: string): string | null {
+export function parseUkDate(raw: string, { allowFuture = false } = {}): string | null {
   const match = /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/.exec(raw.trim());
   if (!match) return null;
   const [, d, m, y] = match.map(Number);
@@ -34,7 +34,7 @@ export function parseUkDate(raw: string): string | null {
     date.getUTCMonth() === m - 1 &&
     date.getUTCDate() === d &&
     y > 1900 &&
-    date.getTime() <= Date.now();
+    (allowFuture ? y < 2200 : date.getTime() <= Date.now());
   if (!valid) return null;
   return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 }
@@ -43,4 +43,103 @@ export function formatUkDate(iso: string | null): string {
   if (!iso) return '';
   const [y, m, d] = iso.split('-');
   return `${d}.${m}.${y}`;
+}
+
+// Календарна дата в локальному часі як YYYY-MM-DD
+export function toIsoDate(date: Date): string {
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${date.getFullYear()}-${m}-${d}`;
+}
+
+export function todayIso(): string {
+  return toIsoDate(new Date());
+}
+
+export function addDays(date: Date, days: number): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate() + days);
+}
+
+// Цей місяць і день у вказаному році; 29 лютого в невисокосний рік стає 28-м
+function inYear(source: Date, year: number): Date {
+  const date = new Date(year, source.getMonth(), source.getDate());
+  return date.getMonth() === source.getMonth() ? date : new Date(year, source.getMonth() + 1, 0);
+}
+
+// Найближча річниця дати, починаючи з сьогодні включно
+export function nextOccurrence(iso: string, from: Date = new Date()): Date {
+  const source = parseIsoDate(iso);
+  const today = new Date(from.getFullYear(), from.getMonth(), from.getDate());
+  const thisYear = inYear(source, today.getFullYear());
+  return thisYear >= today ? thisYear : inYear(source, today.getFullYear() + 1);
+}
+
+// Скільки повних років, місяців і днів минуло
+export function durationParts(from: Date, to: Date = new Date()) {
+  let years = to.getFullYear() - from.getFullYear();
+  let months = to.getMonth() - from.getMonth();
+  let days = to.getDate() - from.getDate();
+  if (days < 0) {
+    months -= 1;
+    days += new Date(to.getFullYear(), to.getMonth(), 0).getDate();
+  }
+  if (months < 0) {
+    years -= 1;
+    months += 12;
+  }
+  return { years, months, days };
+}
+
+export function formatDuration({ years, months, days }: ReturnType<typeof durationParts>): string {
+  const parts = [
+    years ? `${years} ${pluralUk(years, ['рік', 'роки', 'років'])}` : '',
+    months ? `${months} ${pluralUk(months, ['місяць', 'місяці', 'місяців'])}` : '',
+    days ? `${days} ${pluralUk(days, ['день', 'дні', 'днів'])}` : '',
+  ].filter(Boolean);
+  return parts.length ? parts.join(' ') : 'Сьогодні ваш перший день';
+}
+
+const MONTHS_GENITIVE = [
+  'січня',
+  'лютого',
+  'березня',
+  'квітня',
+  'травня',
+  'червня',
+  'липня',
+  'серпня',
+  'вересня',
+  'жовтня',
+  'листопада',
+  'грудня',
+];
+
+// «14 лютого» або «14 лютого 2020»
+export function formatDayMonth(date: Date, withYear = false): string {
+  const base = `${date.getDate()} ${MONTHS_GENITIVE[date.getMonth()]}`;
+  return withYear ? `${base} ${date.getFullYear()}` : base;
+}
+
+// «сьогодні», «вчора», «5 днів тому»
+export function formatDaysAgo(days: number): string {
+  if (days <= 0) return 'сьогодні';
+  if (days === 1) return 'вчора';
+  return `${days} ${pluralUk(days, ['день', 'дні', 'днів'])} тому`;
+}
+
+// «сьогодні», «завтра», «через 5 днів»
+export function formatDaysLeft(days: number): string {
+  if (days <= 0) return 'сьогодні';
+  if (days === 1) return 'завтра';
+  return `через ${days} ${pluralUk(days, ['день', 'дні', 'днів'])}`;
+}
+
+// Порядковий номер річниці: 1-ша, 2-га, 3-тя, 7-ма, 40-ва, решта -та
+export function formatOrdinal(n: number): string {
+  const mod100 = n % 100;
+  const mod10 = n % 10;
+  if (mod100 >= 11 && mod100 <= 19) return `${n}-та`;
+  if (mod100 === 40) return `${n}-ва`;
+  const suffix = { 1: 'ша', 2: 'га', 3: 'тя', 7: 'ма', 8: 'ма' }[mod10] ?? 'та';
+  return `${n}-${suffix}`;
 }

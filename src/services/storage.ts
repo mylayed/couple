@@ -41,6 +41,7 @@ export const StorageKeys = {
   themeMode: 'theme-mode',
   couple: 'couple',
   sync: 'sync',
+  notifications: 'notifications',
 } as const;
 
 // Адаптер для persist-мідлвара Zustand: MMKV синхронний, тому стан доступний одразу при запуску

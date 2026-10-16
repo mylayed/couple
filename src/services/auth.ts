@@ -1,8 +1,10 @@
 import { AuthError, isAuthError } from '@supabase/supabase-js';
 
 import { loadProfile, useAuth, type Profile } from '@/store/auth';
+import { useNotificationPrefs } from '@/store/notifications';
 import { clearCoupleOnSignOut } from './couple';
 import { signOutGoogle } from './google';
+import { unregisterPushToken } from './notifications';
 import { supabase } from './supabase';
 
 // Усі дії повертають текст помилки українською або null, якщо все вдалося
@@ -149,6 +151,8 @@ export async function resetPassword(
 
 export async function signOut(): Promise<Result> {
   try {
+    // Поки сесія діє, прибираємо push-токен, щоб сповіщення не йшли на телефон без акаунта
+    await unregisterPushToken();
     // scope local: виходимо лише на цьому телефоні, навіть без мережі
     const { error } = await supabase.auth.signOut({ scope: 'local' });
     if (error) return { error: toMessage(error) };
@@ -164,6 +168,8 @@ export async function deleteAccount(): Promise<Result> {
   try {
     const { error } = await supabase.rpc('delete_account');
     if (error) return { error: 'Не вдалося видалити акаунт. Спробуй ще раз.' };
+    // Токени на сервері видалились разом з акаунтом
+    useNotificationPrefs.setState({ pushToken: null });
     await supabase.auth.signOut({ scope: 'local' });
     await signOutGoogle();
     clearCoupleOnSignOut();
