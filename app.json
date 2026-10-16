@@ -40,6 +40,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "adc19662-7e67-4999-a953-b1c5d37f27ae"
+      }
+    },
+    "owner": "haskvel"
   }
 }

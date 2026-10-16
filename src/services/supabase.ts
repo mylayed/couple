@@ -4,7 +4,8 @@ import { createClient } from '@supabase/supabase-js';
 import { getRandomBytes } from 'expo-crypto';
 import * as SecureStore from 'expo-secure-store';
 import { AppState, Platform } from 'react-native';
-import { createMMKV } from 'react-native-mmkv';
+
+import { createStorage, isExpoGo } from './storage';
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
@@ -19,7 +20,8 @@ const ENCRYPTION_KEY_NAME = 'dotyk-auth-key';
 // Тому сесія лежить у зашифрованому MMKV, а випадковий ключ шифрування — у SecureStore.
 // У вебі SecureStore немає; веб у нас лише для перевірки під час розробки.
 function readEncryptionKey(): string | undefined {
-  if (Platform.OS === 'web') return undefined;
+  // У вебі SecureStore немає, а в Expo Go сесія все одно лише в пам'яті
+  if (Platform.OS === 'web' || isExpoGo) return undefined;
   const options = { keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK };
   let key = SecureStore.getItem(ENCRYPTION_KEY_NAME, options);
   if (!key) {
@@ -30,7 +32,7 @@ function readEncryptionKey(): string | undefined {
 }
 
 const encryptionKey = readEncryptionKey();
-const authStorage = createMMKV({
+const authStorage = createStorage({
   id: 'dotyk-auth',
   ...(encryptionKey ? { encryptionKey, encryptionType: 'AES-256' as const } : {}),
 });

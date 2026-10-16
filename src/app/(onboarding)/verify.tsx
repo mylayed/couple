@@ -1,4 +1,4 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
 
@@ -10,6 +10,7 @@ import { MIN_CODE_LENGTH, normalizeCode, resendSignUpCode, verifySignUp } from '
 import { useTheme } from '@/theme/ThemeProvider';
 
 export default function Verify() {
+  const router = useRouter();
   const { spacing } = useTheme();
   const { email = '' } = useLocalSearchParams<{ email?: string }>();
   const [code, setCode] = useState('');

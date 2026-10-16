@@ -1,11 +1,7 @@
-import {
-  GoogleSignin,
-  isErrorWithCode,
-  isSuccessResponse,
-  statusCodes,
-} from '@react-native-google-signin/google-signin';
-
+import { isExpoGo } from './storage';
 import { supabase } from './supabase';
+
+type GoogleSignInModule = typeof import('@react-native-google-signin/google-signin');
 
 // Нативний вхід через Google: бібліотека дає ID-токен, Supabase за ним створює сесію.
 // Працює лише в dev-build або релізній збірці, не в Expo Go і не у вебі (див. google.web.ts).
@@ -13,24 +9,28 @@ import { supabase } from './supabase';
 const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
 const iosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
 
-// Кнопку показуємо лише тоді, коли в .env є Web client ID
-export const isGoogleSignInAvailable = Boolean(webClientId);
+// Кнопку показуємо лише тоді, коли в .env є Web client ID; в Expo Go нативного модуля немає
+export const isGoogleSignInAvailable = Boolean(webClientId) && !isExpoGo;
 
-let configured = false;
+let googleModule: GoogleSignInModule | null = null;
 
-function configure() {
-  if (configured) return;
-  configured = true;
-  GoogleSignin.configure({
-    // ID-токен видається для Web-клієнта: саме його client ID перевіряє Supabase
-    webClientId,
-    iosClientId: iosClientId || undefined,
-  });
+// Модуль підключаємо ліниво: в Expo Go він падає ще під час імпорту
+function load(): GoogleSignInModule {
+  if (!googleModule) {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    googleModule = require('@react-native-google-signin/google-signin') as GoogleSignInModule;
+    googleModule.GoogleSignin.configure({
+      // ID-токен видається для Web-клієнта: саме його client ID перевіряє Supabase
+      webClientId,
+      iosClientId: iosClientId || undefined,
+    });
+  }
+  return googleModule;
 }
 
 export async function signInWithGoogle(): Promise<{ error: string | null }> {
   if (!isGoogleSignInAvailable) return { error: 'Вхід через Google ще не налаштовано.' };
-  configure();
+  const { GoogleSignin, isErrorWithCode, isSuccessResponse, statusCodes } = load();
   try {
     await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
     const response = await GoogleSignin.signIn();
@@ -57,9 +57,8 @@ export async function signInWithGoogle(): Promise<{ error: string | null }> {
 // Щоб наступного разу Google знову запропонував вибрати акаунт
 export async function signOutGoogle(): Promise<void> {
   if (!isGoogleSignInAvailable) return;
-  configure();
   try {
-    await GoogleSignin.signOut();
+    await load().GoogleSignin.signOut();
   } catch {
     // Користувач міг і не входити через Google
   }

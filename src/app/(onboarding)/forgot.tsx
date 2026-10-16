@@ -1,4 +1,4 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
 
@@ -18,6 +18,7 @@ import { useTheme } from '@/theme/ThemeProvider';
 
 // Два кроки на одному екрані: спершу пошта, потім код із листа й новий пароль
 export default function Forgot() {
+  const router = useRouter();
   const { spacing } = useTheme();
   const params = useLocalSearchParams<{ email?: string }>();
   const [email, setEmail] = useState(params.email ?? '');

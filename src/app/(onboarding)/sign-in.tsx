@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
 
@@ -11,6 +11,7 @@ import { isValidEmail, resendSignUpCode, signIn } from '@/services/auth';
 import { useTheme } from '@/theme/ThemeProvider';
 
 export default function SignIn() {
+  const router = useRouter();
   const { spacing } = useTheme();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

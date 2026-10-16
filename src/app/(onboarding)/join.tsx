@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
 
@@ -10,6 +10,7 @@ import { INVITE_CODE_LENGTH, normalizeInviteCode, useCouple } from '@/store/coup
 import { useTheme } from '@/theme/ThemeProvider';
 
 export default function Join() {
+  const router = useRouter();
   const { spacing } = useTheme();
   const joinCouple = useCouple((s) => s.joinCouple);
   const [code, setCode] = useState('');

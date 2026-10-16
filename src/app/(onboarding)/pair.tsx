@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { KeyIcon, ShareNetworkIcon } from 'phosphor-react-native';
 import { Share, View } from 'react-native';
 
@@ -13,6 +13,7 @@ import { useCouple } from '@/store/couple';
 import { useTheme } from '@/theme/ThemeProvider';
 
 export default function Pair() {
+  const router = useRouter();
   const { spacing } = useTheme();
   const name = useAuth((s) => s.profile?.name);
   const code = useCouple((s) => s.inviteCode);

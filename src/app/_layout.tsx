@@ -27,10 +27,11 @@ function Shell() {
           contentStyle: { backgroundColor: colors.background },
         }}
       >
-        <Stack.Protected guard={!isPaired}>
+        {/* Групи не мають власного URL, тому куди переходити, вказуємо явно */}
+        <Stack.Protected guard={!isPaired} redirectTo="/">
           <Stack.Screen name="(onboarding)" />
         </Stack.Protected>
-        <Stack.Protected guard={isPaired}>
+        <Stack.Protected guard={isPaired} redirectTo={signedIn ? '/pair' : '/welcome'}>
           <Stack.Screen name="(tabs)" />
         </Stack.Protected>
       </Stack>

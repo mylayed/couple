@@ -15,14 +15,14 @@ export default function OnboardingLayout() {
         contentStyle: { backgroundColor: colors.background },
       }}
     >
-      <Stack.Protected guard={!signedIn}>
+      <Stack.Protected guard={!signedIn} redirectTo="/pair">
         <Stack.Screen name="welcome" />
         <Stack.Screen name="sign-up" />
         <Stack.Screen name="sign-in" />
         <Stack.Screen name="verify" />
         <Stack.Screen name="forgot" />
       </Stack.Protected>
-      <Stack.Protected guard={signedIn}>
+      <Stack.Protected guard={signedIn} redirectTo="/welcome">
         <Stack.Screen name="pair" />
         <Stack.Screen name="join" />
       </Stack.Protected>

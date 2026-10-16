@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { HeartIcon } from 'phosphor-react-native';
 import { StyleSheet, View } from 'react-native';
 
@@ -10,6 +10,7 @@ import { Text } from '@/components/Text';
 import { useTheme } from '@/theme/ThemeProvider';
 
 export default function Welcome() {
+  const router = useRouter();
   const { colors, spacing } = useTheme();
 
   return (
